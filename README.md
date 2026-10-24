@@ -1,9 +1,9 @@
-# 数学のつまづきを見つけるアプリ
+# ケアレスノート
 
 [![IMAGE ALT TEXT HERE](https://jphacks.com/wp-content/uploads/2026/07/IMG_5316.png)](https://www.youtube.com/watch?v=piaNsc6ilBI)
 
 ## 製品概要
-
+数学のつまづきを見つけるアプリ
 ### 背景(製品開発のきっかけ、課題等）
 ### 製品説明（具体的な製品の説明）
 ### 特長
