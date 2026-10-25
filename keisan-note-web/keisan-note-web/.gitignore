@@ -1,0 +1,10 @@
+node_modules/
+.wrangler/
+# キーが入るので公開しない
+.dev.vars
+# Kaggle のデータは再配布できないので含めない
+data/*.csv
+public/data/*.json
+public/data/*.bin
+# メンバーの元のモデル（90MB。Web 用は public/data/models/team/ に変換済み）
+model/

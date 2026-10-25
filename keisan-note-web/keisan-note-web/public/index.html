@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ケアレスノート | 計算ミス分析（プロトタイプ）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f6f5f0;--surface:#fff;--ink:#1d2433;--sub:#5d6677;--line:#d9d9d0;--accent:#c8372d;--accent-soft:#fbe9e6;--ok:#2c7a4b;--warn:#b8741a;--warn-soft:#fbf1dc;
+  color-scheme:light;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171f;--surface:#1c212c;--ink:#eceae2;--sub:#a3a9b6;--line:#333a48;--accent:#ff7467;--accent-soft:#3a2321;--ok:#6cc58c;--warn:#e8b25a;--warn-soft:#3a2f1a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171f;--surface:#1c212c;--ink:#eceae2;--sub:#a3a9b6;--line:#333a48;--accent:#ff7467;--accent-soft:#3a2321;--ok:#6cc58c;--warn:#e8b25a;--warn-soft:#3a2f1a;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.7 "Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif}
+.wrap{max-width:880px;margin:0 auto;padding:20px 16px 64px}
+header h1{font-size:26px;margin:8px 0 2px;letter-spacing:.02em}
+header p{margin:0;color:var(--sub);font-size:14px}
+.badge{display:inline-block;border:1px solid var(--accent);color:var(--accent);border-radius:4px;padding:0 8px;font-size:12px;margin-left:8px;vertical-align:middle}
+nav{display:flex;gap:6px;margin:20px 0 16px;overflow-x:auto}
+nav button{flex:1;min-width:104px;border:1px solid var(--line);background:var(--surface);color:var(--sub);padding:10px 8px;border-radius:8px;font:inherit;font-size:14px;cursor:pointer}
+nav button[aria-current="step"]{border-color:var(--accent);color:var(--ink);box-shadow:inset 0 -3px 0 var(--accent);font-weight:700}
+nav button:disabled{opacity:.45;cursor:not-allowed}
+section.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+h2{font-size:19px;margin:0 0 4px}
+.lead{color:var(--sub);font-size:14px;margin:0 0 14px}
+button.btn{font:inherit;font-weight:700;border:0;border-radius:8px;padding:11px 16px;background:var(--accent);color:#fff;cursor:pointer;min-height:44px}
+button.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button.btn:disabled{opacity:.5;cursor:wait}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:28px 16px;text-align:center}
+.drop p{margin:4px 0 14px;color:var(--sub);font-size:14px}
+canvas{max-width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:#fff;touch-action:none;display:block}
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media (min-width:760px){.grid.two{grid-template-columns:1.1fr 1fr}}
+.item{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px;background:var(--bg)}
+.item.low{border-color:var(--warn);background:var(--warn-soft)}
+.item.fixed{border-color:var(--ok)}
+.item h3{font-size:15px;margin:0 0 6px;display:flex;justify-content:space-between;gap:8px}
+.conf{font-size:12px;color:var(--sub);font-weight:400}
+.item.low .conf{color:var(--warn);font-weight:700}
+label{display:block;font-size:12px;color:var(--sub);margin-top:6px}
+input[type=text],textarea,select{width:100%;font:inherit;font-size:15px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)}
+textarea{resize:vertical;min-height:64px}
+.thumb{margin-top:10px}
+.thumb canvas{max-height:90px;width:auto}
+details{margin-top:14px;font-size:13px;color:var(--sub)}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px;overflow-x:auto;font-size:12px;line-height:1.5;color:var(--ink)}
+.card{border-left:4px solid var(--accent);background:var(--bg);padding:12px 14px;margin-bottom:12px;border-radius:0 8px 8px 0}
+.card h3{margin:0 0 4px;font-size:16px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.tags span{background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:0 10px;font-size:13px}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;max-width:220px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.note{font-size:13px;color:var(--sub);border-top:1px solid var(--line);margin-top:18px;padding-top:12px}
+.empty{color:var(--sub);text-align:center;padding:24px 0}
+.err{color:var(--accent);font-size:14px;margin:8px 0 0;flex-basis:100%}
+ol.mis{margin:8px 0 0;padding-left:20px}
+ol.mis li{margin-bottom:8px}
+ol.mis small{display:block;color:var(--sub);font-size:12px;line-height:1.4;margin-top:2px}
+.mode{display:inline-block;border-radius:999px;padding:2px 12px;font-weight:700;font-size:13px}
+.mode.demo{background:var(--warn-soft);color:var(--warn)}
+.mode.live{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.mode.warn{background:var(--accent-soft);color:var(--accent)}
+#cfg p{margin:4px 0}
+.notice{background:var(--warn-soft);color:var(--ink);border-left:4px solid var(--warn);border-radius:0 6px 6px 0;padding:10px 12px;font-size:14px;margin:12px 0 0}
+.sub{color:var(--sub);font-size:14px;margin:6px 0 0}
+#addq{margin-top:4px}
+#eedi,#pass{margin-top:10px}
+#pass p{margin:4px 0}
+.kind{display:inline-block;margin-left:8px;font-size:12px;font-weight:500;color:var(--sub);border:1px solid var(--line);border-radius:999px;padding:0 8px;vertical-align:middle}
+fieldset.ans{border:0;padding:0;margin:6px 0 0;min-width:0}
+fieldset.ans legend{font-size:12px;color:var(--sub);padding:0}
+.ansrow{display:flex;gap:10px;flex-wrap:wrap}
+.trio{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:0 10px}
+.trio>div:first-child{grid-column:1/-1}
+.kind.unit{color:var(--accent);border-color:var(--accent)}
+.qtext{font-size:13px;color:var(--sub);margin:2px 0 6px}
+label.ansvar{display:flex;align-items:center;gap:6px;margin:4px 0 0;font-size:15px;color:var(--ink);flex:1 1 120px;min-width:0}
+label.ansvar span{white-space:nowrap;font-weight:700}
+.where{margin:8px 0 0;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:0 6px 6px 0;padding:8px 10px;font-size:14px}
+.where p{margin:2px 0 0}
+.hit{margin:6px 0 0;font-size:14px;background:var(--warn-soft);border-radius:6px;padding:6px 10px}
+#eedi p{margin:4px 0}
+.filebtn{display:inline-flex;align-items:center;cursor:pointer;font-size:14px;font-weight:700;margin-top:6px;border:1px solid var(--line);border-radius:8px;padding:8px 14px;color:var(--ink)}
+button.link{background:none;border:0;padding:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>ケアレスノート<span class="badge">プロトタイプ</span></h1>
+  <p>答案の写真から、計算ミスの傾向を講師向けにまとめます。Eediの誤概念データセットをもとに、どの考え方でつまずいているかを推定します。</p>
+</header>
+
+<nav id="steps" aria-label="手順"></nav>
+<main id="view"></main>
+
+<div class="note" id="cfg">
+  <p><span class="mode" id="mode"></span></p>
+  <p id="modehelp"></p>
+  <div id="pass" hidden></div>
+  <div id="eedi" hidden></div>
+</div>
+</div>
+
+<script>
+/* ===== サービス層：本番ではここだけを差し替える ===== */
+const TRUTH = [
+  {q:1, problem:"3x + 4 = 13", steps:["3x = 13 + 4","3x = 17","x = 17/3"], answer:"17/3", correct:"3"},
+  {q:2, problem:"-2x + 5 = 9", steps:["-2x = 9 - 5","-2x = 4","x = -2"], answer:"-2", correct:"-2"},
+  {q:3, problem:"(-3)×(-4) - 2²", steps:["= -12 - 4","= -16"], answer:"-16", correct:"8"},
+  {q:4, problem:"1/2 + 1/3", steps:["= 2/5"], answer:"2/5", correct:"5/6"}
+];
+const BOX = {1:[.04,.17,.92,.15],2:[.04,.34,.92,.15],3:[.04,.51,.92,.15],4:[.04,.68,.92,.15]};
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- 接続設定 ----------
+   web:    自分たちのサイト（Cloudflare Pages）として開いている。読み取りは Gemini、診断はチームのモデル（ブラウザで動く）
+   claude: claude.ai のサイトとして開いている。読み取りと診断を Claude が行う
+   どちらでもないときはデモモード（サンプルの応答と簡易判定） */
+const CFG = {
+  web: false, claude: false, images: false,
+  ocrReady: false, ocrName: "読み取りサービス", passcodeRequired: false,
+  get live(){ return this.web || this.claude; }
+};
+let HEALTH = {};
+
+/* ---------- Mathpix: v3/text の応答 → 問題ごとの items ----------
+   line_data の各行は {text, confidence, cnt:[[x,y],...]}。
+   "(1)" で始まる行を問題の先頭とみなし、続く行を途中式としてまとめる。 */
+/* LaTeX → 読みやすい形（model.py の latex_to_plain と同じ規則） */
+function latexToPlain(s){
+  s = String(s||"").replace(/\\\(|\\\)|\\\[|\\\]|\$/g,"").replace(/\\left|\\right/g,"");
+  for(let i=0;i<3;i++) s = s.replace(/\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g,"($1)/($2)");
+  s = s.replace(/\((-?\w+)\)\/\((-?\w+)\)/g,"$1/$2").replace(/\\sqrt\s*\{([^{}]*)\}/g,"√($1)")
+       .replace(/\\times|\\cdot/g,"×").replace(/\\div/g,"÷").replace(/\^\{([^{}]*)\}/g,"^$1")
+       .replace(/\\text\s*\{([^{}]*)\}/g,"$1").replace(/[{}]/g,"");
+  return s.replace(/\s+/g," ").trim();
+}
+function mathpixToItems(res, w, h){
+  const strip = s => latexToPlain(s);
+  const items = []; let cur = null;
+  for(const ln of (res.line_data||[])){
+    const raw = (ln.text||"").trim(), t = strip(raw); if(!t) continue;
+    const xs = ln.cnt.map(p=>p[0]), ys = ln.cnt.map(p=>p[1]);
+    const box = [Math.min(...xs)/w, Math.min(...ys)/h, (Math.max(...xs)-Math.min(...xs))/w, (Math.max(...ys)-Math.min(...ys))/h];
+    const m = t.match(/^\(?(\d+)\)\s*(.+)$/);
+    if(m){
+      // 正答計算には LaTeX のまま渡す（\frac などを sympy 側で解釈するため）
+      const lx = raw.replace(/^\(?\d+\)\s*/,"").replace(/\\\(|\\\)|\$/g,"").trim();
+      cur = {q:+m[1], problem_latex:lx, problem:m[2], steps:[], confs:[ln.confidence], boxes:[box]}; items.push(cur);
+    }
+    else if(cur){ cur.steps.push(t); cur.confs.push(ln.confidence); cur.boxes.push(box); }
+  }
+  return items.map(it => {
+    const x0=Math.min(...it.boxes.map(b=>b[0])), y0=Math.min(...it.boxes.map(b=>b[1]));
+    const x1=Math.max(...it.boxes.map(b=>b[0]+b[2])), y1=Math.max(...it.boxes.map(b=>b[1]+b[3]));
+    const last = it.steps[it.steps.length-1] || "";
+    return {q:it.q, problem:it.problem, problem_latex:it.problem_latex, steps:it.steps,
+      answer: last.replace(/^.*=\s*/,""), confidence: Math.min(...it.confs), bbox:[x0-.01,y0-.01,x1-x0+.02,y1-y0+.02]};
+  });
+}
+
+/* ダミー: Mathpix v3/text が返す形（include_line_data: true）を再現 */
+function fakeMathpix(w, h, override){
+  const lines = [];
+  TRUTH.forEach(t => {
+    const y0 = BOX[t.q][1]*h, n = t.steps.length;
+    const conf = {1:.93,2:.62,3:.88,4:.76}[t.q];
+    lines.push({type:"math", text:`(${t.q}) \\(${t.problem}\\)`, confidence:Math.min(.99,conf+.05), cnt:[[34,y0+8],[420,y0+8],[420,y0+34],[34,y0+34]]});
+    t.steps.forEach((s,i)=>{
+      let txt = s; if(t.q===2 && i===2 && !override) txt = "x = 2";   // マイナス記号の読み落とし
+      const yy = y0+54+i*22-(n>2?18:0);
+      lines.push({type:"math", text:`\\(${txt}\\)`, confidence: (t.q===2&&i===2&&!override)?conf:Math.min(.99,conf+.08), cnt:[[90,yy-18],[300,yy-18],[300,yy+4],[90,yy+4]]});
+    });
+  });
+  return {request_id:"demo", confidence:.84, line_data:lines};
+}
+
+/* ---------- Web版: 中継プログラム（functions/api）を呼ぶ。合言葉はヘッダーで送る ---------- */
+const PASS_KEY = "kn_passcode_v1";
+let PASSCODE = ""; try { PASSCODE = localStorage.getItem(PASS_KEY) || ""; } catch(e) {}
+function setPasscode(v){ PASSCODE = v; try { v ? localStorage.setItem(PASS_KEY, v) : localStorage.removeItem(PASS_KEY); } catch(e) {} }
+async function api(path, body){
+  let r;
+  try {
+    r = await fetch(path, {method: body ? "POST" : "GET", cache: "no-store",
+      headers: {"Content-Type": "application/json", "x-app-passcode": PASSCODE}, body: body ? JSON.stringify(body) : undefined});
+  } catch(e){ throw Object.assign(new Error("サーバーに接続できませんでした。インターネット接続を確認してください。"), {code: "network"}); }
+  if(r.status === 401){ setPasscode(""); drawCfg(HEALTH); throw Object.assign(new Error("合言葉が違います。画面の下で合言葉を入れ直してください。"), {code: "passcode"}); }
+  if(!r.ok){ let d = ""; try { d = (await r.json()).error || ""; } catch(e) {} throw new Error(d || `${path} が ${r.status} を返しました`); }
+  return r.json();
+}
+// 画像を Gemini で読み取る（キーは中継プログラムだけが持つ）
+const webRead = (canvas, crop = false) => api("/api/ocr", {image: canvas.toDataURL("image/jpeg", .9), crop});
+
+/* サンプル答案用の応答: Eedi モデルの出力形式（misconception_mapping.csv の本物の ID と英語名、スコア順）
+   スコアは見本の値。本番モードではメンバーのモデルが計算する。 */
+const FAKE_MODEL = {
+  1:[{misconception_id:1971, misconception_name:"Confuses the inverse operations of addition and subtraction when rearranging equations", score:.86},
+     {misconception_id:1214, misconception_name:"When solving an equation, uses the same operation rather than the inverse.", score:.71}],
+  3:[{misconception_id:1597, misconception_name:"Believes multiplying two negatives gives a negative answer", score:.81},
+     {misconception_id:2316, misconception_name:"Mixes up squaring and multiplying by 2 or doubling", score:.64}],
+  4:[{misconception_id:217, misconception_name:"When adding fractions, adds the numerators and denominators", score:.9},
+     {misconception_id:907, misconception_name:"Does not find a common denominator when adding/subtracting fractions", score:.77}]
+};
+/* 誤概念 ID（misconception_mapping.csv）→ 講師向け日本語と単元。
+   本番モードでモデルがこの ID を返したときも日本語で表示される。
+   訳がない ID は英語名のまま表示する（全件の訳は今後の課題） */
+const JA = {
+  "1971":["数の項を移項するときに符号を変えていない","移項"],
+  "1214":["移項するときに符号を変えていない","移項"],
+  "1597":["負の数どうしのかけ算の符号を間違えている","正負の数の乗法"],
+  "2316":["2乗を2倍と取り違えている","累乗"],
+  "217":["分母どうし・分子どうしをたしている","分数の加法"],
+  "907":["通分しないで分子だけを計算している","通分"],
+  "1196":["最後に x の係数でわるとき、マイナスを無視している","正負の数"],
+  "2119":["マイナスの符号を落としている","正負の数"],
+  "220":["かっこを外すとき、後ろの項にかけ忘れている","分配法則"],
+  "583":["かっこの前のマイナスを、後ろの項に反映していない","分配法則"],
+  "195":["わる数とわられる数を逆にしている","方程式のわり算"],
+  "1190":["わり算の代わりにひき算をしている","方程式のわり算"],
+  "975":["わり算の代わりにかけ算をしている","方程式のわり算"],
+  "1134":["わり算の代わりにたし算をしている","方程式のわり算"],
+  "1507":["かけ算・わり算を先に計算していない","計算の順序"],
+  "2436":["二次方程式の解の符号を逆にしている","二次方程式"],
+  "132":["負の解を書き落としている","二次方程式"],
+  "1219":["連立方程式で x と y の値を取り違えている","連立方程式"]
+};
+const HINT = {
+  "移項":"「移項すると符号が変わる」を、天びんの両辺に同じ操作をする考え方から説明し直すと定着しやすいです。",
+  "正負の数の乗法":"「負×負＝正」を数直線や具体例で確認してから、累乗を先に計算する順序を練習します。",
+  "累乗":"3²を「3×3」と書き出してから計算させ、「3×2」との違いを並べて見せます。",
+  "分数の加法":"分母をそろえる理由を図（分けたピザなど）で見せ、分母は足さないことを確認します。",
+  "通分":"分母の最小公倍数を先に書き出す手順を決めて、毎回同じ順で解かせます。",
+  "正負の数":"最後の行で符号だけを確認する習慣をつけさせます。途中式のどこで符号が変わったかを一緒に追います。",
+  "分配法則":"かっこの前の数（符号も含めて）を、かっこの中の項に1つずつ矢印でかけていく書き方を練習させます。",
+  "方程式のわり算":"「両辺を x の係数でわる」と声に出して確認させ、ax = b から x = b ÷ a になることを図で示します。",
+  "計算の順序":"かけ算・わり算に下線を引いてから計算させ、先に計算する部分を目で見て分かるようにします。",
+  "二次方程式":"因数分解した式の各かっこを 0 とおき、x − 2 = 0 から x = 2 のように1つずつ解かせます。",
+  "連立方程式":"求めた値を両方の式に代入して確かめる習慣をつけさせ、x と y を取り違えていないかを確認します。"
+};
+
+// 手入力用の空の問題
+const blankItem = q => ({q, label:"", question:"", question_en:"", problem:"", problem_latex:"", steps:[], answer:"", correct:"", correct_in:"", mark:"none", unit:"", confidence:1, bbox:null, manual:true});
+// 表示用の問題番号（答案に書かれた番号があればそれを使う）
+const qName = i => i?.label ? (/^[問(（]/.test(i.label) ? i.label : `問${i.label}`) : `問${i?.q}`;
+
+/* ===== Claude 連携（claude.ai のサイトとして開いたときの本番モード） =====
+   読み取り: Claude が答案の写真を読む（見る人の Claude アカウントで動く。キー不要）
+   診断: Eedi の誤概念リストから候補を絞り込み、Claude が選んで日本語で説明する
+   ※Web 版ではメンバーのモデルを bert.js でブラウザ上で動かす */
+let SAMPLE = null;
+// 単元の一覧（読み取りで選ばせる）。先頭の 9 単元は、チームのモデルで誤概念を推定できる（Eedi のデータがある）単元
+const UNITS_ALL = [
+  "正の数・負の数（中1）", "文字式・式の計算（中1・中2）", "一次方程式（中1）", "連立方程式（中2）",
+  "式の展開と因数分解（中3）", "平方根（中3）", "二次方程式（中3）", "小学校の計算（分数・小数・四則）",
+  "比・割合・速さ（小6〜中1）", "関数・グラフ（中学）", "図形（中学）", "データの活用・確率（中学）", "高校の内容", "その他",
+];
+const IN_SCOPE = new Set(UNITS_ALL.slice(0, 9));
+const inScope = i => !i.unit || IN_SCOPE.has(i.unit);   // 単元が未設定（手入力・デモ）のときは対象として扱う
+const SCOPE_WHY = u => u === "高校の内容" ? "Eedi のデータはイギリスの義務教育（日本の中学〜高1程度）の範囲で、複素数・二項定理・整式の割り算などの誤概念は入っていません"
+  : u === "その他" ? "どの単元にも当てはまらない問題です"
+  : "このアプリは計算分野に絞っているため、チームのモデルはこの単元の誤概念を候補に入れていません";
+
+const READ_SHEET = `添付の画像は、数学の答案の写真です。計算問題だけでなく、文章を含む問題もあります。
+問題ごとに、問題文・式・生徒の途中式と答え・先生の丸つけを書き起こしてください。
+
+厳守すること:
+- 生徒が書いたとおりに書き起こす。計算の誤りを直したり、正しい答えを補ったりしない（誤答の分析に使うため）
+- 式は半角で書く。分数は 1/2（分子や分母が式なら (x + 1)/(x + 2)）、累乗は x^2、掛け算は ×、割り算は ÷、マイナスは -、等号は =、根号は √、虚数単位は i
+- 小問（①②など）も1問ずつ分ける。q_no は上から順に 1, 2, 3 と通し番号を付け、label には答案に書かれた番号を「(3)①」「問2」のように入れる
+- question: 印刷された問題文を、文章も含めて書き起こす。「次の式を計算せよ」のような共通の指示は、小問ごとに付ける
+- problem: 式を計算する・方程式を解くだけで答えが出る問題なら、その式だけを入れる（例: "3x + 4 = 13"）。連立方程式は式を「, 」でつなぐ。文章題や、条件から値を求める問題など、式だけでは答えが決まらない問題は空にする
+- question_en: 問題文の英訳（数学の英語で。式はそのまま）
+- steps: 生徒の途中式を1行ずつ
+- answer: 生徒の最終的な答え。解答欄が複数あれば "a = 9, b = 4, c = -2"、"商 x^2 - x - 3, 余り -7" のようにつなぐ。連立方程式は "x = 3, y = 1"、解が2つなら "x = 2, -3"、計算問題は値や式だけ
+- 生徒が答えを書いていない問題は、answer を空にする
+- mark: 先生の丸つけ（赤ペン）。答えが ○ で囲まれていれば "correct"、レ点（✓）・斜線・× なら "wrong"、丸つけがなければ "none"
+- unit: 次から最も近い単元を1つ選ぶ: ${UNITS_ALL.join(" / ")}
+- 字がかすれている・二通りに読めるなど、自信がない問題は unclear を true にする
+- box_2d は、その問題（問題文から答えまで）を囲むおおよその枠を [上, 左, 下, 右] で、画像全体を 0〜1000 とした値で書く
+- 生徒の氏名・点数、答えではないメモやコメントは書き起こさない
+
+次の形の JSON だけを返す:
+{"problems":[{"q_no":1,"label":"(1)","question":"次の連立方程式を解け。","question_en":"Solve the simultaneous equations.","problem":"2x + y = 7, x - y = 2","steps":["3x = 9","x = 3","y = 1"],"answer":"x = 3, y = 1","mark":"correct","unit":"連立方程式（中2）","unclear":false,"box_2d":[120,40,300,900]}]}`;
+
+const READ_CROP = `添付の画像は、数学の答案の一部を切り抜いたものです。
+書かれている式を、上の行から順に1行ずつ lines に書き起こしてください。
+
+厳守すること:
+- 書かれているとおりに書き起こし、計算の誤りを直さない
+- 式は半角で書く。分数は 1/2、累乗は x^2、掛け算は ×、割り算は ÷、マイナスは -、根号は √
+- 最終的な答えが写っていれば answer に入れる（連立方程式なら "x = 3, y = 1"、解が2つなら "x = 2, -3"）。写っていなければ空にする
+- 自信がない文字があれば unclear を true にする
+
+次の形の JSON だけを返す:
+{"lines":["-2x = 4","x = -2"],"answer":"x = -2","unclear":false}`;
+
+const SAMPLE_MSG = {
+  not_granted: "Claudeの利用が許可されていません。手入力で続けられます。",
+  sampling_disabled: "このアカウントではClaudeを呼び出せません。手入力で続けられます。",
+  not_declared: "このページからClaudeを呼び出せません。手入力で続けられます。",
+  capability_disabled: "このページからClaudeを呼び出せません。手入力で続けられます。",
+  capability_removed: "このアプリのバージョンではClaudeを呼び出せません。手入力で続けられます。",
+  images_unavailable: "この環境では画像をClaudeに送れません。手入力で続けられます。",
+  image_rejected: "この画像は送れませんでした。JPEGかPNGで撮り直してください。",
+  rate_limited: "Claudeの利用上限に達しました。少し時間をおいてからやり直してください。",
+  session_expired: "claude.ai のログインが切れています。ログインし直してください。",
+  refused: "Claudeがこの内容の処理を断りました。画像や入力を見直してください。",
+  invalid_json: "結果をうまく受け取れませんでした。もう一度試してください。",
+  empty_completion: "結果をうまく受け取れませんでした。もう一度試してください。",
+  prompt_too_large: "一度に送る量が多すぎます。問題数を減らしてください。",
+  upstream_error: "Claudeとの通信に失敗しました。もう一度試してください。"
+};
+async function askClaude(input, opts){
+  try { return await SAMPLE.json(input, {...opts, signal: S.ctl?.signal}); }
+  catch(e){
+    const code = (e && e.code) || "upstream_error";
+    if(["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(code)){ CFG.claude = false; drawCfg(HEALTH); }
+    if(code === "images_unavailable"){ CFG.images = false; drawCfg(HEALTH); }
+    const err = new Error(SAMPLE_MSG[code] || SAMPLE_MSG.upstream_error); err.code = code; throw err;
+  }
+}
+const canvasBlob = c => new Promise((ok, ng) => c.toBlob(b => b ? ok(b) : ng(new Error("画像を作れませんでした")), "image/jpeg", .9));
+const cleanLine = s => String(s ?? "").replace(/\s+/g," ").trim();
+// 読み取り結果（Gemini / Claude 共通の形）→ 問題ごとのデータ
+function sheetToItems(obj, w, h){
+  const raw = (Array.isArray(obj?.problems) ? obj.problems : []).filter(p => cleanLine(p?.problem) || cleanLine(p?.question));
+  // 番号が読めた問題を先に確定し、欠けている・重複している問題には後ろの空き番号を振る
+  const used = new Set(), list = [];
+  for(const p of raw){ const q = parseInt(p?.q_no, 10); if(q > 0 && !used.has(q)){ used.add(q); list.push([q, p]); } else list.push([null, p]); }
+  let nxt = Math.max(0, ...used);
+  const probs = list.map(([q, p]) => [q ?? ++nxt, p]).sort((a, b) => a[0] - b[0]);
+  return probs.map(([q, p], i) => {
+    const problem = cleanLine(p.problem);
+    const steps = (Array.isArray(p.steps) ? p.steps : []).map(cleanLine).filter(Boolean);
+    let answer = cleanLine(p.answer);
+    // 答えが空なら最後の途中式から補う（連立方程式は1行では決まらないので補わない）
+    if(!answer && steps.length && answerFormat(problem).kind !== "system") answer = steps[steps.length - 1].replace(/^.*=\s*/, "");
+    const b = Array.isArray(p.box_2d) ? p.box_2d : p.box;
+    let bbox = [0, i / probs.length, 1, 1 / probs.length];
+    if(Array.isArray(b) && b.length === 4 && b.every(v => typeof v === "number")){
+      const [y0, x0, y1, x1] = b.map(v => Math.min(1000, Math.max(0, v)) / 1000);
+      if(x1 > x0 && y1 > y0) bbox = [x0, y0, x1 - x0, y1 - y0];
+    }
+    const mark = ["correct", "wrong"].includes(p.mark) ? p.mark : "none", unit = UNITS_ALL.includes(p.unit) ? p.unit : "";
+    return {q, label: cleanLine(p.label).slice(0, 20), question: cleanLine(p.question), question_en: cleanLine(p.question_en),
+      problem, problem_latex: problem, steps, answer, correct_in: "", mark, unit, confidence: p.unclear ? .6 : .95, bbox};
+  });
+}
+function cropToResult(obj){
+  const steps = (Array.isArray(obj?.lines) ? obj.lines : []).map(cleanLine).filter(Boolean);
+  return {steps, answer: cleanLine(obj?.answer), confidence: steps.length ? (obj?.unclear ? .6 : .95) : 0};
+}
+async function claudeRead(canvas, crop){
+  const blob = await canvasBlob(canvas);
+  return askClaude(crop ? READ_CROP : READ_SHEET, {images: [blob], modelTier: "default"});
+}
+
+/* ---------- Eedi の誤概念リスト（このブラウザにだけ保存） ----------
+   データの再配布を避けるため、ページには埋め込まず、使う端末で CSV を一度読み込む */
+const EEDI_KEY = "kn_eedi_mapping_v1";
+const EEDI = {list:null, byId:new Map(), docs:null, df:null, avgLen:0};
+function parseCsv(text){
+  const rows = []; let row = [], cell = "", q = false;
+  for(let i = 0; i < text.length; i++){
+    const ch = text[i];
+    if(q){ if(ch === '"'){ if(text[i+1] === '"'){ cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if(ch === '"') q = true;
+    else if(ch === ","){ row.push(cell); cell = ""; }
+    else if(ch === "\n" || ch === "\r"){ if(ch === "\r" && text[i+1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += ch;
+  }
+  if(cell || row.length){ row.push(cell); rows.push(row); }
+  return rows;
+}
+const STOP = new Set("a an the of to in on and or is are be that when with for as it its by not from their they than then this which does do".split(" "));
+const stem = w => w.length > 5 && w.endsWith("ing") ? w.slice(0,-3) : w.length > 4 && w.endsWith("es") ? w.slice(0,-2) : w.length > 4 && w.endsWith("ed") ? w.slice(0,-2) : w.length > 3 && w.endsWith("s") ? w.slice(0,-1) : w;
+const tokensEn = s => (String(s).toLowerCase().match(/[a-z]+/g) || []).filter(w => !STOP.has(w)).map(stem);
+function loadEedi(text){
+  const rows = parseCsv(text.replace(/^﻿/, ""));
+  const head = (rows[0] || []).map(s => s.trim());
+  const iId = head.indexOf("MisconceptionId"), iName = head.indexOf("MisconceptionName");
+  if(iId < 0 || iName < 0) throw new Error("misconception_mapping.csv ではないようです（MisconceptionId と MisconceptionName の列が必要です）");
+  const list = rows.slice(1).map(r => ({id: Number(r[iId]), name: (r[iName] || "").trim()})).filter(m => Number.isFinite(m.id) && m.name);
+  if(list.length < 100) throw new Error("誤概念の行が少なすぎます。ファイルを確認してください");
+  EEDI.list = list; EEDI.byId = new Map(list.map(m => [m.id, m]));
+  EEDI.docs = list.map(m => tokensEn(m.name));
+  EEDI.df = new Map(); EEDI.docs.forEach(d => new Set(d).forEach(t => EEDI.df.set(t, (EEDI.df.get(t) || 0) + 1)));
+  EEDI.avgLen = EEDI.docs.reduce((a,d) => a + d.length, 0) / EEDI.docs.length;
+}
+try { const t = localStorage.getItem(EEDI_KEY); if(t) loadEedi(t); } catch(e) { EEDI.list = null; }
+
+// 問題の式から、Eedi の英語の誤概念名を探す手がかりの語を作る
+function queryTerms(it, hits){
+  const p = latexToPlain(it.problem) + " " + (it.steps || []).join(" "), t = [];
+  if(/\//.test(p)) t.push("fraction","numerator","denominator","common");
+  if(/-/.test(p)) t.push("negative","sign","subtract");
+  if(/\^|²|³/.test(p)) t.push("square","power","index","indice");
+  if(/=/.test(it.problem) && /[a-z]/i.test(it.problem)) t.push("equation","solve","solving","inverse","operation","side","balance");
+  if(/\(/.test(p)) t.push("bracket","brackets","expand");
+  if(/[×*]/.test(p) || /\d[a-z(]/i.test(p)) t.push("multiply","multiplying","product");
+  if(/÷/.test(p)) t.push("divide","dividing","division");
+  if(/\+/.test(p)) t.push("add","adding","addition","sum");
+  if(/\d\.\d/.test(p)) t.push("decimal","place","value");
+  if(/[+-][^=]*[×÷*^]|[×÷*^][^=]*[+-]/.test(p)) t.push("order","operations","bidmas");
+  hits.forEach(h => t.push(...tokensEn(h.misconception_name)));
+  t.push(...tokensEn(it.question_en || ""));   // 文章題は英訳した問題文の語も使う
+  return t.map(stem);
+}
+function eediCandidates(it, hits, k = 40){
+  if(!EEDI.list) return hits.map(h => ({id:h.misconception_id, name:h.misconception_name}));
+  const qt = queryTerms(it, hits), N = EEDI.list.length, k1 = 1.2, b = .75;
+  const scored = EEDI.docs.map((d, i) => {
+    let s = 0;
+    for(const t of new Set(qt)){
+      const tf = d.filter(x => x === t).length; if(!tf) continue;
+      const df = EEDI.df.get(t) || 0, idf = Math.log(1 + (N - df + .5) / (df + .5));
+      s += idf * tf * (k1 + 1) / (tf + k1 * (1 - b + b * d.length / EEDI.avgLen));
+    }
+    return [s, i];
+  }).filter(x => x[0] > 0).sort((a,b) => b[0] - a[0]).slice(0, k).map(([, i]) => EEDI.list[i]);
+  for(const h of hits){ const m = EEDI.byId.get(Number(h.misconception_id)); if(m && !scored.includes(m)) scored.unshift(m); }
+  return scored;
+}
+
+// 誤答をまとめて1回で Claude に診断してもらう
+async function claudeDiagnose(wrong){
+  const blocks = wrong.map(i => {
+    const hits = i.how === "engine" ? safeRules(i) : [];
+    i._cands = inScope(i) ? eediCandidates(i, hits) : [];
+    const ex = i.explain;
+    return `### 問${i.q}${i.label ? `（答案の番号: ${i.label}）` : ""}
+${i.question ? `問題文: ${i.question}\n` : ""}式: ${i.problem || "（式だけでは解けない問題）"}
+単元: ${i.unit || "不明"}${inScope(i) ? "" : "（対象外の単元。misconception_id は null にし、言える範囲で説明する）"}
+途中式: ${(i.steps || []).filter(s => String(s).trim()).join(" / ") || "（なし）"}
+生徒の答え: ${i.answer}
+正答: ${i.correct || "不明（推測しないこと）"}
+途中式の診断（計算で確かめた事実）: ${ex ? `${ex.title}。${ex.detail}` : "特定できず"}
+計算で再現できた誤り: ${hits.length ? hits.map(h => `[${h.misconception_id}] ${h.misconception_name}`).join(" / ") : "なし"}
+候補の誤概念（ID: 英語名）:
+${i._cands.map(m => `${m.id}: ${m.name}`).join("\n") || "（なし）"}`;
+  }).join("\n\n");
+  const prompt = `あなたは中学校の数学指導に詳しい教師です。生徒の計算ミスや文章題の誤答から、つまずいている数学の考え方（誤概念）を推定し、大学生の塾講師にわかるように説明してください。
+
+各問題について:
+- 「候補の誤概念」（Eedi データセット）から、途中式と答えに最もよく合うものを最大3つ選ぶ。合うものがなければ misconception_id を null にし、自分の言葉で説明する
+- 「途中式の診断」は、途中式を1行ずつ計算して確かめた事実です。最も強い根拠として扱い、ja・reason・advice をこれと矛盾させない
+- 「計算で再現できた誤り」は、その誤りをすると生徒の答えと完全に一致する計算です。強い根拠として扱う
+- 英語の誤概念名を直訳しない。中学校の先生が生徒に話すときの自然な日本語にする（悪い例:「移項の際に足し算と引き算の逆演算を混同する」→ 良い例:「移項するとき、+7 を -7 に変えずに右辺へ移している」）
+- 根拠が弱いときは score を低くする。途中式がないときは、答えから言えることだけを書く
+- 日本語は中学校の用語（移項、通分、累乗、正負の数 など）を使う
+
+次の形の JSON 配列だけを返す（問題ごとに1要素）:
+[{"q":1,"misconceptions":[{"misconception_id":217,"ja":"分母どうし・分子どうしを足している（25字以内）","concept":"分数の加法（8字以内）","score":0.8,"reason":"途中式で 1+1 と 2+3 を足している（40字以内）"}],"advice":"次の授業での声かけ（60字以内）"}]
+
+${blocks}`;
+  const res = await askClaude(prompt, {modelTier:"default"});
+  const arr = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
+  return wrong.map(i => {
+    const r = arr.find(x => Number(x?.q) === i.q) || {};
+    const allowed = new Set(i._cands.map(m => m.id));
+    const ms = (Array.isArray(r.misconceptions) ? r.misconceptions : [])
+      // 候補にない ID を挙げた回答は当てにならないので捨てる（null は「一覧に当てはまらない」の意味なので残す）
+      .filter(m => m?.misconception_id == null || allowed.has(Number(m.misconception_id)))
+      .slice(0, 3).map(m => {
+      const id = m?.misconception_id == null ? null : Number(m.misconception_id);
+      const src = id != null ? (EEDI.byId.get(id) || i._cands.find(c => c.id === id)) : null;
+      return {misconception_id:id, misconception_name: src ? src.name : "", ja: cleanLine(m?.ja) || "（説明なし）",
+        concept: cleanLine(m?.concept) || null, score: Math.max(0, Math.min(1, Number(m?.score) || 0)), reason: cleanLine(m?.reason)};
+    }).sort((a,b) => b.score - a.score);
+    delete i._cands;
+    return {misconceptions: ms, advice: cleanLine(r.advice)};
+  });
+}
+// 時間のかかる処理に「中止」ボタンを付ける
+function withStop(btn){
+  if(!CFG.claude || CFG.web) return () => {};
+  S.ctl = new AbortController();
+  const stop = document.createElement("button");
+  stop.className = "btn ghost"; stop.type = "button"; stop.textContent = "中止";
+  stop.onclick = () => S.ctl?.abort();
+  btn.after(stop);
+  return () => { stop.remove(); S.ctl = null; };
+}
+
+/* ===== チームのモデル（メンバーが学習させた misconception_model をブラウザで動かす） =====
+   メンバーの app.py と同じ仕組み:
+   - 誤概念をチームのモデルでベクトルにしておく（npm run build-data で作成済みのファイルを読む）
+   - 「問題・正答・生徒の答え」の文を同じモデルでベクトルにし、内積（コサイン類似度）が大きい順に並べる
+   モデルの計算は bert.js（外部ライブラリなし）。重みは data/models/team/ にあり、初回だけダウンロードする */
+const TEAM_DIR = "data/models/team/";
+const MODEL = {status: "idle", progress: 0, error: "", check: null, ids: null, names: null, emb: null, dim: 384, team: null, promise: null};
+const nextTick = () => new Promise(r => setTimeout(r, 0));   // 計算の途中で画面を固まらせない
+function loadTeamModel(){
+  if(MODEL.promise) return MODEL.promise;
+  MODEL.status = "loading"; MODEL.error = ""; MODEL.progress = 0; drawCfg(HEALTH);
+  MODEL.promise = (async () => {
+    const get = async (path, kind) => {
+      let r;
+      try { r = await fetch(path, {headers: {"x-app-passcode": PASSCODE}, cache: "force-cache"}); }
+      catch(e){ throw new Error("データを読み込めませんでした。インターネット接続を確認してください"); }
+      if(r.status === 401){ setPasscode(""); throw Object.assign(new Error("合言葉が違います"), {code: "passcode"}); }
+      if(!r.ok) throw new Error(`${path} がありません。README の手順（npm run pack-model と npm run build-data）を実行してから公開してください`);
+      return kind === "json" ? r.json() : kind === "text" ? r.text() : r.arrayBuffer();
+    };
+    const [meta, buf] = await Promise.all([get("data/misconceptions.json", "json"), get("data/mis_emb.bin", "bin")]);
+    const dim = meta.dim || 384, n = Array.isArray(meta.ids) ? meta.ids.length : 0;
+    if(!n || meta.names?.length !== n || buf.byteLength !== n * dim * 4) throw new Error("データの件数が合いません。npm run build-data をやり直してください");
+    Object.assign(MODEL, {ids: meta.ids, names: meta.names, units: Array.isArray(meta.units) ? meta.units : [], dim, emb: new Float32Array(buf), meta});
+    if(!window.__knExtractor){
+      const bert = await import("./bert.js");
+      const man = await get(TEAM_DIR + "manifest.json", "json"), chunks = [];
+      for(const [k, f] of man.chunks.entries()){ chunks.push(await get(TEAM_DIR + f, "bin")); MODEL.progress = Math.round((k + 1) / (man.chunks.length + 1) * 100); drawCfg(HEALTH); }
+      MODEL.team = new bert.TeamModel(man, chunks.map(b => new Uint16Array(b)), await get(TEAM_DIR + "tokenizer.json", "text"));
+      MODEL.mismatch = meta.model_created && man.created !== meta.model_created;   // データを作ったときと別のモデルになっていないか
+    }
+    // 自己チェック: 1件目の誤概念名をブラウザで計算し直し、作成済みのベクトルと比べる（1.000 に近いほど一致）
+    MODEL.check = dotRow(await embedText(MODEL.names[0]), 0);
+    MODEL.status = "ready";
+  })().catch(e => { MODEL.status = "error"; MODEL.error = e.message; MODEL.promise = null; throw e; })
+     .finally(() => drawCfg(HEALTH));
+  return MODEL.promise;
+}
+async function embedText(text){
+  if(window.__knExtractor) return (await window.__knExtractor(text)).data;   // テスト用の差し替え口
+  return MODEL.team.embed(text, nextTick);
+}
+function dotRow(v, row){ let s = 0; const o = row * MODEL.dim; for(let k = 0; k < MODEL.dim; k++) s += MODEL.emb[o + k] * v[k]; return s; }
+// メンバーの app.py と同じ問い合わせ文
+const teamQuery = (text, correct, answer) => MODEL.team ? MODEL.team.query(text, correct, answer)
+  : `Question: ${text}\nCorrect answer: ${correct}\nStudent answer: ${answer}`;
+
+// 問題の形式（一次方程式・連立方程式など）に合う単元。例: 一次方程式の答案に、連立方程式やグラフの誤概念を出さない
+function unitsFor(problem){
+  const f = answerFormat(problem), sqrt = /√|sqrt/.test(problem);
+  const base = [UNIT.neg, UNIT.elem, ...(sqrt ? [UNIT.sqrt] : [])];
+  if(f.kind === "system") return [UNIT.sys, UNIT.lin, UNIT.expr, ...base];
+  if(f.kind === "equation") return f.multi || /\^2|²/.test(problem) ? [UNIT.quad, UNIT.exp, UNIT.sqrt, UNIT.expr, ...base] : [UNIT.lin, UNIT.expr, ...base];
+  if(f.kind === "expr") return [UNIT.expr, UNIT.exp, ...base];
+  return base;
+}
+// 式のない文章題: 読み取りで選ばれた単元と、文章題でよく使う計算の単元
+const unitsForText = unit => [...new Set([unit || UNIT.lin, UNIT.lin, UNIT.expr, UNIT.ratio, UNIT.neg, UNIT.elem])];
+async function teamPredict(text, correct, answer, topK = 5, units = null){
+  await loadTeamModel();
+  const v = await embedText(teamQuery(latexToPlain(text), latexToPlain(correct), latexToPlain(answer)));
+  const n = MODEL.ids.length, scores = new Float32Array(n);
+  for(let i = 0; i < n; i++) scores[i] = dotRow(v, i);
+  // 単元の情報があるデータ（npm run build-data で作ったもの）なら、問題の形式に合う単元の誤概念だけを候補にする
+  const useUnits = units && MODEL.units.some(Boolean);
+  return [...scores.keys()].filter(i => !useUnits || units.includes(MODEL.units[i]))
+    .sort((a, b) => scores[b] - scores[a]).slice(0, topK)
+    .map(i => ({misconception_id: MODEL.ids[i], misconception_name: MODEL.names[i], unit: MODEL.units[i] || null, score: scores[i]}));
+}
+
+// 一度訳した誤概念はブラウザに保存して、次からも日本語で出せるようにする
+const JA_CACHE_KEY = "kn_ja_cache_v1";
+let JA_CACHE = {}; try { JA_CACHE = JSON.parse(localStorage.getItem(JA_CACHE_KEY) || "{}") || {}; } catch(e) { JA_CACHE = {}; }
+function rememberJa(list){
+  for(const t of list) if(Number.isInteger(t.id) && t.ja) JA_CACHE[t.id] = [t.ja, t.concept || null];
+  try { localStorage.setItem(JA_CACHE_KEY, JSON.stringify(JA_CACHE)); } catch(e) {}
+}
+// 英語の誤概念 → 講師向けの日本語（Web版は Gemini が訳し、声かけとまとめを作る。モデルの順位は変えない）
+async function webReport(diag){
+  const ref = m => ({id: m.misconception_id, name: m.misconception_name, unit: m.unit || undefined});
+  const r = await api("/api/report", {items: diag.map(d => ({q: d.q, label: d.label || "", question: d.question || "", unit: d.unit || "", out_of_scope: Boolean(d.out),
+    problem: d.problem, steps: d.steps || [], answer: d.answer, correct: d.correct,
+    explain: d.explain ? {title: d.explain.title, detail: d.explain.detail} : undefined,
+    candidates: d.misconceptions.map(ref), rule_hits: (d.rule_hits || []).map(ref)}))});
+  S.summary = r.summary || "";
+  rememberJa((r.items || []).flatMap(x => x.translations || []));
+  return diag.map(d => {
+    const t = (r.items || []).find(x => x.q === d.q) || {translations: [], advice: ""};
+    const fix = m => { const x = t.translations.find(y => y.id === m.misconception_id); return x ? {...m, ja: x.ja, concept: x.concept, relevant: x.relevant !== false} : m; };
+    return {...d, misconceptions: d.misconceptions.map(fix), rule_hits: (d.rule_hits || []).map(fix), advice: t.advice || d.advice};
+  });
+}
+
+const Services = {
+  // 画像 → 問題ごとのデータ
+  async ocr(canvas){
+    if(manualMode()) return [blankItem(1)];   // 自動で読み取れないときは手入力へ
+    if(CFG.web) return sheetToItems(await webRead(canvas), canvas.width, canvas.height);
+    if(CFG.claude) return sheetToItems(await claudeRead(canvas, false), canvas.width, canvas.height);
+    await wait(900);
+    return mathpixToItems(fakeMathpix(canvas.width, canvas.height), canvas.width, canvas.height);
+  },
+  // 囲んだ範囲だけを読み直す
+  async reocr(crop, q){
+    const it = S.items.find(i => i.q === q);
+    if(CFG.live){
+      const r = cropToResult(CFG.web ? await webRead(crop, true) : await claudeRead(crop, true));
+      let answer = r.answer;
+      if(!answer && r.steps.length && answerFormat(it?.problem || "").kind !== "system") answer = r.steps[r.steps.length - 1].replace(/^.*=\s*/, "");
+      return {q, steps: r.steps, answer: answer || it?.answer || "", confidence: r.confidence};
+    }
+    await wait(700);
+    const t = TRUTH.find(x => x.q === q);
+    return {q, steps: [...t.steps], answer: t.answer, confidence: .96};
+  },
+  // 正答はブラウザ内の計算エンジンで求める
+  async solve(it){
+    if(!CFG.live && S.sample && !it.edited) return TRUTH.find(x => x.q === it.q)?.correct ?? "";
+    return jsSolve(it.problem);
+  },
+  // 正答を決めてから（計算エンジン → 入力された正答 → 先生の丸つけ の順）、誤答だけを診断する
+  async diagnose(items){
+    S.skipped = []; S.conflicts = [];
+    const hasAns = i => String(i.answer).replace(/[a-z]\s*=\s*(,|$)/gi, "").replace(/[\s,]/g, "");
+    const todo = items.filter(i => (i.problem.trim() || (i.question || "").trim()) && hasAns(i));
+    for(const it of todo){
+      it.correct = ""; it.how = ""; let why = "";
+      // 計算エンジンは中学の範囲向け（i を虚数単位として扱えない など）なので、高校の内容には使わない
+      if(it.problem.trim() && it.unit !== "高校の内容"){
+        try { it.correct = await this.solve(it); if(it.correct) it.how = "engine"; } catch(e) { why = e.message; }
+      }
+      if(!it.how && cleanLine(it.correct_in)){ it.correct = cleanLine(it.correct_in); it.how = "input"; }
+      if(!it.how && (it.mark === "correct" || it.mark === "wrong")) it.how = "mark";
+      if(!it.how) S.skipped.push({q: it.q, name: qName(it), why: it.problem.trim()
+        ? `${why || "正答を計算できませんでした"}。「正答」の欄に入力すると判定できます`
+        : "正答がわかりません。「正答」の欄に入力するか、丸つけ済みの答案を使ってください"});
+    }
+    const judged = todo.filter(i => i.how);
+    for(const i of judged){
+      // 数式として比べる（0.75 と 3/4、x=3 y=1 と (x, y)=(3, 1) は同じ）。読めないときは文字列で比べる
+      if(i.how === "engine"){ const ok = isCorrect(i.problem, i.answer); i.ok = ok === null ? norm(i.answer) === norm(i.correct) : ok; }
+      else if(i.how === "input") i.ok = looseSame(i.answer, i.correct);
+      else i.ok = i.mark === "correct";
+      // 先生の丸つけと判定が食い違う（読み取りの誤りかもしれない）
+      if(i.how !== "mark" && i.mark && i.mark !== "none" && (i.mark === "correct") !== i.ok) S.conflicts.push({q: i.q, name: qName(i), mark: i.mark});
+    }
+    const wrong = judged.filter(i => !i.ok);
+    const out = [];
+    const reqOf = i => ({question_text: i.question_en || i.problem_latex || i.problem || i.question, correct_answer: i.correct, student_answer: i.answer, student_steps: i.steps, top_k: 5});
+    const base = i => ({q: i.q, label: i.label || "", question: i.question || "", unit: i.unit || "", out: !inScope(i), how: i.how,
+      problem: i.problem, steps: i.steps, answer: i.answer, correct: i.correct, request: reqOf(i)});
+    // 途中式を1行ずつ確かめて、どこで・なぜ間違えたかを調べる（計算で確かめた事実として最優先。式があり、正答を計算できた問題だけ）
+    // 式のない文章題は、生徒が立てた式から「立式のミス」か「計算のミス」かを調べる
+    for(const i of wrong){ try { i.explain = i.how === "engine" ? explainMistake(i) : inScope(i) && !i.problem.trim() ? explainWordProblem(i) : null; } catch(e) { i.explain = null; } }
+    // 手入力・手直しした文章題は、チームのモデルに渡す前に英訳する（モデルは英語で学習している）
+    if(CFG.web){
+      const need = wrong.filter(i => inScope(i) && !i.question_en && (i.question || "").trim() && !i.problem.trim());
+      if(need.length){
+        try { const r = await api("/api/translate", {texts: need.map(i => i.question)}); need.forEach((i, k) => i.question_en = r.texts?.[k] || ""); }
+        catch(e){ if(e.code === "passcode") throw e; }
+      }
+    }
+    if(CFG.claude && !CFG.web && wrong.length){
+      const res = await claudeDiagnose(wrong);
+      wrong.forEach((i, k) => out.push({...base(i), explain: i.explain, ...res[k]}));
+    } else {
+      for(const i of wrong){
+        const hits = i.how === "engine" ? safeRules(i) : [];
+        let ms;
+        if(!inScope(i)) ms = [];   // 対象外の単元（高校の内容など）は推定しない
+        else if(CFG.web) ms = await teamPredict(i.question_en || i.problem || i.question, i.correct || "unknown", i.answer, 5,
+          i.problem.trim() ? unitsFor(i.problem) : unitsForText(i.unit));   // チームのモデル
+        else if(S.sample && !i.edited) ms = (await wait(300), FAKE_MODEL[i.q] || []);
+        else ms = hits;   // 簡易判定
+        out.push({...base(i), explain: i.explain, misconceptions: ms, rule_hits: CFG.web ? hits : []});
+      }
+    }
+    S.judged = judged.length;
+    return out;
+  },
+  async report(diag){
+    S.summary = ""; S.reportError = "";
+    if(CFG.web && diag.length){
+      try { return (await webReport(diag)).map(toJa); }
+      catch(e){ if(e.code === "passcode") throw e; S.reportError = e.message; }
+    }
+    if(!CFG.live) await wait(400);
+    return diag.map(toJa);
+  }
+};
+function toJa(d){
+  const jaOf = m => {
+    const ja = JA[String(m.misconception_id)] || JA_CACHE[m.misconception_id];
+    // Gemini / Claude が付けた日本語 → 辞書・保存済みの訳 → どれもなければ英語名のまま
+    return {...m, ja: m.ja || (ja ? ja[0] : m.misconception_name), concept: m.concept || (ja ? ja[1] : null) || m.unit || null, translated: Boolean(m.ja || ja)};
+  };
+  const ms = (d.misconceptions || []).map(jaOf), hits = (d.rule_hits || []).map(jaOf);
+  const shown = ms.filter(m => m.relevant !== false);   // Gemini が「途中式と関係が薄い」と判定した候補は出さない
+  const ex = d.explain, exConcept = ex ? JA[String(ex.id)]?.[1] : null;
+  // 見出し: 途中式の診断 → 計算で再現できたミス → モデルの推定 の順に優先
+  const top = ex ? {ja: ex.title, concept: exConcept, score: 1} : hits[0] || shown[0]
+    || (d.out ? {ja: "原因の推定は対象外の単元です", concept: d.unit, score: 0} : {ja: "原因を特定できませんでした", concept: null, score: 0});
+  const unitTag = ex?.unit ? unitName(ex.unit) : null;
+  return {...d, misconceptions: ms, shown, hidden: ms.length - shown.length, rule_hits: hits, type: top.ja,
+    concepts: [...new Set([unitTag || top.concept || d.unit, ...(ex ? [] : hits.map(h => h.concept))].filter(Boolean))], p: top.score || 0,
+    untranslated: [...shown, ...hits].some(m => !m.translated),
+    advice: d.advice || HINT[exConcept] || HINT[top.concept] || HINT[hits[0]?.concept] || "解き直しの途中式を一緒に確認してください。"};
+}
+/* ===== ブラウザ内の計算エンジン =====
+   サーバー版の sympy の代わり。中学の計算分野を誤差なく扱う。
+   - 数: 分数（有理数）と平方根（a√n の和）
+   - 式: 文字式（展開・整理）、一次方程式、二次方程式、連立方程式
+   OPT は「よくある誤り」を再現して簡易判定に使うためのスイッチ。 */
+const gcd = (a,b) => { a = Math.abs(a); b = Math.abs(b); while(b){ [a,b] = [b, a % b]; } return a; };
+const Q = {
+  mk(n, d = 1){
+    if(d === 0) throw new Error("0で割っています");
+    if(!Number.isSafeInteger(n) || !Number.isSafeInteger(d)) throw new Error("数が大きすぎて計算できません");
+    if(d < 0){ n = -n; d = -d; }
+    const g = gcd(n, d) || 1; return {n: n / g, d: d / g};
+  },
+  add(a,b){ return Q.mk(a.n*b.d + b.n*a.d, a.d*b.d); },
+  neg(a){ return {n: -a.n || 0, d: a.d}; },
+  mul(a,b){ return Q.mk(a.n*b.n, a.d*b.d); },
+  div(a,b){ if(b.n === 0) throw new Error("0で割っています"); return Q.mk(a.n*b.d, a.d*b.n); },
+  str(a){ return a.d === 1 ? String(a.n) : `${a.n}/${a.d}`; },
+  val(a){ return a.n / a.d; },
+  zero: {n:0, d:1}, one: {n:1, d:1}
+};
+// 平方因数をくくり出す: k = s² × f
+function splitSquare(k){
+  let s = 1, f = k;
+  for(let i = 2; i * i <= f; i++){ while(f % (i*i) === 0){ f /= i*i; s *= i; } }
+  return [s, f];
+}
+/* ---------- R: 平方根を含む数（radicand → 有理数の係数） ---------- */
+const R = {
+  q(x){ const m = new Map(); if(x.n !== 0) m.set(1, x); return m; },
+  int(n){ return R.q(Q.mk(n)); },
+  add(a,b){
+    const m = new Map(a);
+    for(const [k,v] of b){ const s = m.has(k) ? Q.add(m.get(k), v) : v; if(s.n === 0) m.delete(k); else m.set(k, s); }
+    return m;
+  },
+  neg(a){ const m = new Map(); for(const [k,v] of a) m.set(k, Q.neg(v)); return m; },
+  sub(a,b){ return R.add(a, R.neg(b)); },
+  mul(a,b){
+    let m = new Map();
+    for(const [k1,v1] of a) for(const [k2,v2] of b){
+      const [s, f] = splitSquare(k1 * k2);
+      m = R.add(m, new Map([[f, Q.mul(Q.mul(v1, v2), Q.mk(s))]]));
+    }
+    return m;
+  },
+  isZero(a){ return a.size === 0; },
+  isRational(a){ return [...a.keys()].every(k => k === 1); },
+  toQ(a){ return a.get(1) || Q.zero; },
+  inv(a){
+    if(a.size === 0) throw new Error("0で割っています");
+    const t = [...a];
+    if(t.length === 1){ const [k, v] = t[0]; return new Map([[k, Q.div(Q.one, Q.mul(v, Q.mk(k)))]]); }   // 1/(c√k) = √k/(c·k)
+    if(t.length === 2){   // 有理化: 1/(a√m + b√n) = (a√m − b√n)/(a²m − b²n)
+      const [[m, x], [n, y]] = t;
+      const den = Q.add(Q.mul(Q.mul(x, x), Q.mk(m)), Q.neg(Q.mul(Q.mul(y, y), Q.mk(n))));
+      if(den.n === 0) throw new Error("0で割っています");
+      return new Map([[m, Q.div(x, den)], [n, Q.div(Q.neg(y), den)]].filter(([, v]) => v.n !== 0));
+    }
+    throw new Error("この形の分母の有理化には対応していません");
+  },
+  div(a,b){ return R.mul(a, R.inv(b)); },
+  sqrt(a){
+    if(!R.isRational(a)) throw new Error("根号の中に根号がある式には対応していません");
+    const q = R.toQ(a);
+    if(q.n < 0) throw new Error("負の数の平方根は中学の範囲外です");
+    if(q.n === 0) return new Map();
+    const [s, f] = splitSquare(q.n * q.d);   // √(n/d) = √(n·d)/d
+    return new Map([[f, Q.mk(s, q.d)]]);
+  },
+  val(a){ let s = 0; for(const [k,v] of a) s += Q.val(v) * Math.sqrt(k); return s; },
+  eq(a,b){ return R.isZero(R.sub(a,b)); },
+  str(a){
+    if(a.size === 0) return "0";
+    const terms = [...a].sort((x,y) => x[0] - y[0]).map(([k, v]) => {
+      const neg = v.n < 0, n = Math.abs(v.n), d = v.d;
+      let body;
+      if(k === 1) body = d === 1 ? `${n}` : `${n}/${d}`;
+      else body = `${n === 1 ? "" : n}√${k}${d === 1 ? "" : "/" + d}`;
+      return [neg, body];
+    });
+    return terms.map(([neg, b], i) => i === 0 ? (neg ? "-" : "") + b : (neg ? " - " : " + ") + b).join("");
+  }
+};
+/* ---------- P: 多項式（単項式 → R の係数） ---------- */
+const monoKey = ex => Object.keys(ex).filter(v => ex[v]).sort().map(v => ex[v] === 1 ? v : `${v}^${ex[v]}`).join("*");
+const monoParse = key => { const ex = {}; if(key) for(const part of key.split("*")){ const [v, e] = part.split("^"); ex[v] = e ? +e : 1; } return ex; };
+let OPT = {};   // {negTimesNeg: 負×負を負にする, squareAsDouble: 2乗を2倍にする}
+const P = {
+  c(r){ const m = new Map(); if(!R.isZero(r)) m.set("", r); return m; },
+  v(name){ return new Map([[name, R.int(1)]]); },
+  add(a,b){
+    const m = new Map(a);
+    for(const [k,v] of b){ const s = m.has(k) ? R.add(m.get(k), v) : v; if(R.isZero(s)) m.delete(k); else m.set(k, s); }
+    return m;
+  },
+  neg(a){
+    // よくある誤りの再現: かっこの前のマイナスを、かっこの中の最初の項にしか反映しない
+    if(OPT.negParenFirstOnly && a._paren && a.size > 1){ const m = new Map(); let first = true; for(const [k,v] of a){ m.set(k, first ? R.neg(v) : v); first = false; } return m; }
+    const m = new Map(); for(const [k,v] of a) m.set(k, R.neg(v)); return m;
+  },
+  sub(a,b){ return P.add(a, P.neg(b)); },
+  isConst(a){ return [...a.keys()].every(k => k === ""); },
+  constOf(a){ return a.get("") || new Map(); },
+  mul(a,b){
+    // よくある誤りの再現: 負の数どうしの積を負にする
+    if(OPT.negTimesNeg && P.isConst(a) && P.isConst(b)){
+      const x = P.constOf(a), y = P.constOf(b);
+      if(R.isRational(x) && R.isRational(y) && R.toQ(x).n < 0 && R.toQ(y).n < 0) return P.c(R.neg(R.mul(x, y)));
+    }
+    // よくある誤りの再現: かっこを外すとき、かっこの中の最初の項にしかかけない
+    if(OPT.distFirstOnly){
+      const [mono, par] = b._paren && b.size > 1 && a.size === 1 ? [a, b] : a._paren && a.size > 1 && b.size === 1 ? [b, a] : [null, null];
+      if(par){ const [[k0, v0], ...rest] = [...par]; return P.add(P.mul(mono, new Map([[k0, v0]])), new Map(rest)); }
+    }
+    let m = new Map();
+    const negNeg = (x, y) => OPT.negTimesNeg && R.isRational(x) && R.isRational(y) && R.toQ(x).n < 0 && R.toQ(y).n < 0;
+    for(const [k1,v1] of a) for(const [k2,v2] of b){
+      const e1 = monoParse(k1), e2 = monoParse(k2), ex = {...e1};
+      for(const v in e2) ex[v] = (ex[v] || 0) + e2[v];
+      const prod = R.mul(v1, v2);
+      m = P.add(m, new Map([[monoKey(ex), negNeg(v1, v2) ? R.neg(prod) : prod]]));
+    }
+    // 2(a − b) のような「数 × かっこ」も、かっこでくくった式として扱う（前のマイナスの誤りの再現に使う）
+    if((a._paren && b.size === 1) || (b._paren && a.size === 1)) m._paren = true;
+    return m;
+  },
+  div(a,b){
+    if(!P.isConst(b)){
+      if(b.size !== 1) throw new Error("多項式で割る式には対応していません");
+      const [[bk, bv]] = [...b], be = monoParse(bk), inv = R.inv(bv), m = new Map();
+      for(const [k, v] of a){
+        const ex = monoParse(k);
+        for(const n in be){ ex[n] = (ex[n] || 0) - be[n]; if(ex[n] < 0) throw new Error("割ると分数の形の式になるため対応していません"); }
+        m.set(monoKey(ex), R.mul(v, inv));
+      }
+      return m;
+    }
+    const inv = R.inv(P.constOf(b));
+    const m = new Map(); for(const [k,v] of a){ const r = R.mul(v, inv); if(!R.isZero(r)) m.set(k, r); } return m;
+  },
+  pow(a, e){
+    if(OPT.squareAsDouble && e === 2) return P.mul(a, P.c(R.int(2)));   // よくある誤りの再現: 2乗を2倍にする
+    let r = P.c(R.int(1)); for(let i = 0; i < e; i++) r = P.mul(r, a); return r;
+  },
+  // 文字に値を代入して計算する（env: 文字 → R）
+  evalAt(a, env){
+    let s = new Map();
+    for(const [k, v] of a){
+      let t = v; const ex = monoParse(k);
+      for(const n in ex){ if(!env.has(n)) throw new Error("値のない文字があります"); for(let i = 0; i < ex[n]; i++) t = R.mul(t, env.get(n)); }
+      s = R.add(s, t);
+    }
+    return s;
+  },
+  vars(a){ const s = new Set(); for(const k of a.keys()) for(const v in monoParse(k)) s.add(v); return [...s].sort(); },
+  degree(a){ let d = 0; for(const k of a.keys()){ const ex = monoParse(k); d = Math.max(d, Object.values(ex).reduce((x,y) => x + y, 0)); } return d; },
+  eq(a,b){ return P.sub(a,b).size === 0; },
+  str(a){
+    if(a.size === 0) return "0";
+    const sup = e => e === 2 ? "²" : e === 3 ? "³" : `^${e}`;
+    const terms = [...a].map(([k, v]) => ({k, v, deg: Object.values(monoParse(k)).reduce((x,y) => x + y, 0)}))
+      .sort((x,y) => y.deg - x.deg || (x.k < y.k ? -1 : 1));
+    return terms.map(({k, v}, i) => {
+      const ex = monoParse(k), mono = Object.keys(ex).sort().map(n => n + (ex[n] === 1 ? "" : sup(ex[n]))).join("");
+      let neg = false, coef;
+      if(R.isRational(v)){
+        const q = R.toQ(v); neg = q.n < 0; const n = Math.abs(q.n);
+        if(!mono) coef = Q.str({n, d:q.d});
+        else if(q.d === 1) coef = n === 1 ? "" : `${n}`;
+        else { const body = `${n === 1 ? "" : n}${mono}/${q.d}`; return i === 0 ? (neg ? "-" : "") + body : (neg ? " - " : " + ") + body; }
+      } else if(v.size === 1){
+        const s = R.str(v); neg = s.startsWith("-"); coef = neg ? s.slice(1) : s;
+      } else coef = `(${R.str(v)})`;
+      const body = coef + mono;
+      return i === 0 ? (neg ? "-" : "") + body : (neg ? " - " : " + ") + body;
+    }).join("");
+  }
+};
+/* ---------- 式の読み取り ---------- */
+function normalizeMath(src){
+  return latexToPlain(src).replace(/²/g,"^2").replace(/³/g,"^3").normalize("NFKC")
+    .replace(/[−–—ー‐]/g,"-").replace(/[×・*]/g,"*").replace(/sqrt/gi,"√").replace(/\s+/g,"");
+}
+function tokenize(src){
+  const s = normalizeMath(src), out = [];
+  for(let i = 0; i < s.length;){
+    const ch = s[i], num = s.slice(i).match(/^\d+(\.\d+)?/);
+    if(num){ const [ip, fp = ""] = num[0].split("."); out.push({t:"n", v:Q.mk(+(ip + fp), 10 ** fp.length)}); i += num[0].length; continue; }
+    if(/[a-z]/i.test(ch)){ out.push({t:"x", name: ch.toLowerCase()}); i++; continue; }
+    if("+-*/÷^()=√".includes(ch)){ out.push({t:ch}); i++; continue; }
+    throw new Error(`「${ch}」は読めない記号です`);
+  }
+  return out;
+}
+function parseExpr(tokens){
+  let p = 0;
+  const peek = () => tokens[p], take = t => { if(peek()?.t !== t) throw new Error("式の形が正しくありません"); p++; };
+  const startsFactor = tk => tk && (tk.t === "x" || tk.t === "(" || tk.t === "√" || tk.t === "n");
+  // 1つの項（3x、2(x+1) などの省略された × をまとめたもの）
+  function operand(){ let r = unary(); while(startsFactor(peek())) r = P.mul(r, power()); return r; }
+  // よくある誤りの再現: かけ算・わり算を優先せず、左から順に計算する
+  function exprLeftToRight(){
+    let v = operand();
+    for(;;){
+      const tk = peek();
+      if(tk && "+-*/÷".includes(tk.t)){ p++; const r = operand(); v = tk.t === "+" ? P.add(v, r) : tk.t === "-" ? P.sub(v, r) : tk.t === "*" ? P.mul(v, r) : P.div(v, r); }
+      else return v;
+    }
+  }
+  function expr(){
+    if(OPT.leftToRight) return exprLeftToRight();
+    let v = term();
+    while(peek() && (peek().t === "+" || peek().t === "-")){ const op = tokens[p++].t, r = term(); v = op === "+" ? P.add(v, r) : P.sub(v, r); }
+    return v;
+  }
+  function term(){
+    let v = unary();
+    for(;;){
+      const tk = peek();
+      if(tk && (tk.t === "*" || tk.t === "/")){ p++; const r = unary(); v = tk.t === "*" ? P.mul(v, r) : P.div(v, r); }
+      else if(tk && tk.t === "÷"){   // 6x²y ÷ 3x は 3x 全体で割る（中学の書き方）
+        p++; let r = unary(); while(startsFactor(peek())) r = P.mul(r, power()); v = P.div(v, r);
+      }
+      else if(startsFactor(tk)) v = P.mul(v, power());   // 3x、2(x+1)、2√3 の省略された ×
+      else return v;
+    }
+  }
+  function unary(){ if(peek()?.t === "-"){ p++; return P.neg(unary()); } if(peek()?.t === "+"){ p++; return unary(); } return power(); }
+  function power(){
+    const b = atom();
+    if(peek()?.t === "^"){
+      p++; const e = unary();
+      if(!P.isConst(e) || !R.isRational(P.constOf(e))) throw new Error("指数は整数にしてください");
+      const q = R.toQ(P.constOf(e));
+      if(q.d !== 1 || q.n < 0 || q.n > 12) throw new Error("指数は0〜12の整数にしてください");
+      return P.pow(b, q.n);
+    }
+    return b;
+  }
+  function atom(){
+    const tk = tokens[p++];
+    if(!tk) throw new Error("式が途中で終わっています");
+    if(tk.t === "n") return P.c(R.q(tk.v));
+    if(tk.t === "x") return P.v(tk.name);
+    if(tk.t === "("){ const v = new Map(expr()); take(")"); v._paren = true; return v; }   // かっこでくくった式の印（誤りの再現に使う）
+    if(tk.t === "√"){
+      const a = atom();
+      if(!P.isConst(a)) throw new Error("√ の中に文字がある式には対応していません");
+      return P.c(R.sqrt(P.constOf(a)));
+    }
+    throw new Error("式の形が正しくありません");
+  }
+  const v = expr();
+  if(p !== tokens.length) throw new Error("式の形が正しくありません");
+  return v;
+}
+const parsePoly = src => parseExpr(tokenize(src));
+
+// 連立方程式は「,」「;」改行で区切る。等号が2つ以上あるときだけ区切る
+function splitEquations(problem){
+  const s = String(problem || "");
+  if((s.match(/[=＝]/g) || []).length < 2) return [s];
+  const parts = s.split(/[,，、;；\n]|\s{2,}/).map(x => x.trim()).filter(Boolean);
+  for(const e of parts) if((e.match(/[=＝]/g) || []).length !== 1) throw new Error("連立方程式は、式を「,」で区切って入力してください（例: 2x + y = 7, x - y = 2）");
+  return parts;
+}
+function eqToPoly(eq){
+  const t = tokenize(eq), i = t.findIndex(x => x.t === "=");
+  if(i < 0) return null;
+  if(t.slice(i + 1).some(x => x.t === "=")) throw new Error("等号が多すぎます");
+  return P.sub(parseExpr(t.slice(0, i)), parseExpr(t.slice(i + 1)));
+}
+function solveLinearSystem(polys, vars){
+  // 連立一次方程式をガウスの消去法で解く（係数は有理数）
+  const rows = polys.map(p => {
+    if(P.degree(p) > 1) throw new Error("連立方程式は一次式だけに対応しています");
+    return [...vars.map(v => { const c = p.get(v) || new Map(); if(!R.isRational(c)) throw new Error("連立方程式の係数に √ がある形には対応していません"); return R.toQ(c); }),
+            (() => { const c = P.constOf(p); if(!R.isRational(c)) throw new Error("連立方程式の係数に √ がある形には対応していません"); return Q.neg(R.toQ(c)); })()];
+  });
+  const n = vars.length; let r = 0;
+  for(let c = 0; c < n; c++){
+    const piv = rows.findIndex((row, i) => i >= r && row[c].n !== 0);
+    if(piv < 0) throw new Error("解が1つに決まりません");
+    [rows[r], rows[piv]] = [rows[piv], rows[r]];
+    const pv = rows[r][c]; rows[r] = rows[r].map(x => Q.div(x, pv));
+    rows.forEach((row, i) => { if(i !== r && row[c].n !== 0){ const f = row[c]; rows[i] = row.map((x, j) => Q.add(x, Q.neg(Q.mul(f, rows[r][j])))); } });
+    r++;
+  }
+  for(let i = n; i < rows.length; i++) if(rows[i][n].n !== 0) throw new Error("この連立方程式には解がありません");
+  const out = new Map(); vars.forEach((v, i) => out.set(v, R.q(rows[i][n]))); return out;
+}
+/* 問題を解く。戻り値 {kind, vars, value, text}
+   kind: value（数の計算）/ expr（文字式の計算）/ equation（方程式）/ system（連立方程式）
+   value: R / P / R の配列（方程式の解）/ Map（変数 → R） */
+function solveProblem(problem, opt = {}){
+  OPT = opt;
+  try {
+    const eqs = splitEquations(problem);
+    if(eqs.length >= 2){
+      const polys = eqs.map(eqToPoly), vars = [...new Set(polys.flatMap(P.vars))].sort();
+      if(!vars.length) throw new Error("文字を含む方程式にしてください");
+      const value = solveLinearSystem(polys, vars);
+      return {kind:"system", vars, value, text: vars.map(v => `${v} = ${R.str(value.get(v))}`).join(", ")};
+    }
+    const p = eqToPoly(eqs[0]);
+    if(!p){
+      const v = parsePoly(eqs[0]);
+      if(P.isConst(v)){ const r = P.constOf(v); return {kind:"value", vars:[], value:r, text:R.str(r)}; }
+      return {kind:"expr", vars:P.vars(v), value:v, text:P.str(v)};
+    }
+    const vars = P.vars(p);
+    if(vars.length === 0) throw new Error("文字を含む方程式にしてください");
+    if(vars.length > 1) throw new Error("文字が2つ以上ある方程式は、式が足りません（連立方程式は「,」で区切って入力してください）");
+    const x = vars[0], d = P.degree(p), co = e => p.get(e === 0 ? "" : e === 1 ? x : `${x}^${e}`) || new Map();
+    let roots;
+    if(d === 1) roots = [R.neg(R.div(co(0), co(1)))];
+    else if(d === 2){
+      const a = co(2), b = co(1), c = co(0);
+      const D = R.sub(R.mul(b, b), R.mul(R.int(4), R.mul(a, c)));
+      if(!R.isRational(D)) throw new Error("この二次方程式には対応していません");
+      if(R.toQ(D).n < 0) throw new Error("この二次方程式には実数の解がありません");
+      const sq = R.sqrt(D), den = R.mul(R.int(2), a);
+      roots = [R.div(R.sub(R.neg(b), sq), den), R.div(R.add(R.neg(b), sq), den)];
+      if(R.eq(roots[0], roots[1])) roots = [roots[0]];
+      roots.sort((u, v) => R.val(u) - R.val(v));
+    } else throw new Error("3次以上の方程式には対応していません");
+    return {kind:"equation", vars:[x], value:roots, text:`${x} = ${roots.map(R.str).join(", ")}`};
+  } finally { OPT = {}; }
+}
+// これまでの呼び出し方（正答を文字列で返す）
+const jsSolve = (problem, opt) => solveProblem(problem, opt).text;
+
+/* ---------- 解答欄の形 ---------- */
+// 問題から、解答欄の形を決める（解けない式でも、等号と文字の数から推測する）
+function answerFormat(problem){
+  try { const r = solveProblem(problem); return {kind:r.kind, vars:r.vars, multi: r.kind === "equation" && r.value.length > 1}; }
+  catch(e){
+    const s = normalizeMath(problem || ""), n = (s.match(/=/g) || []).length;
+    const vars = [...new Set((s.match(/[a-z]/g) || []))].sort();
+    if(n >= 2 && vars.length >= 2) return {kind:"system", vars, multi:false};
+    if(n === 1 && vars.length) return {kind:"equation", vars:[vars[0]], multi: /\^2/.test(s)};
+    return {kind: vars.length ? "expr" : "value", vars, multi:false};
+  }
+}
+// 「x = 3, y = 1」「(x, y) = (3, 1)」「3, 1」などを、変数 → 値の文字列に分ける
+function parseAnswerMap(answer, vars){
+  const s = String(answer || "").replace(/[，、;；]/g, ",").replace(/＝/g, "=").trim(), out = {};
+  const tuple = s.match(/^\(([^)]*)\)\s*=\s*\(([^)]*)\)$/);
+  if(tuple){
+    const ks = tuple[1].split(",").map(x => x.trim().toLowerCase()), vs = tuple[2].split(",").map(x => x.trim());
+    ks.forEach((k, i) => { if(vs[i] != null) out[k] = vs[i]; }); return out;
+  }
+  const re = /([a-z])\s*=\s*([^,=]*?)(?=\s*,|\s+[a-z]\s*=|$)/gi; let m, any = false;
+  while((m = re.exec(s))){ any = true; out[m[1].toLowerCase()] = m[2].trim(); }
+  if(!any){ s.split(",").map(x => x.trim()).filter(Boolean).forEach((v, i) => { if(vars[i]) out[vars[i]] = v; }); }
+  return out;
+}
+// 方程式の答え「x = 2, -3」「x = 1 ± √2」→ 値の文字列の配列
+function parseAnswerList(answer){
+  const s = String(answer || "").replace(/[，、;；]|または|or/g, ",").replace(/＝/g, "=");
+  return s.split(",").map(x => x.replace(/^\s*[a-z]\s*=/i, "").trim()).filter(Boolean)
+    .flatMap(x => x.includes("±") ? [x.replace("±", "+"), x.replace("±", "-")] : [x]);
+}
+// 解答欄の値 → 1つの文字列（画面の入力欄と、判定に使う）
+function formatAnswer(fmt, parts){
+  if(fmt.kind === "system") return fmt.vars.map(v => `${v} = ${(parts[v] || "").trim()}`).join(", ");
+  if(fmt.kind === "equation") return `${fmt.vars[0]} = ${(parts.value || "").trim()}`;
+  return (parts.value || "").trim();
+}
+/* ---------- 正誤の判定 ---------- */
+function evalR(src){
+  const v = parsePoly(String(src).replace(/^\s*=\s*/, ""));
+  if(!P.isConst(v)) throw new Error("文字が残っています");
+  return P.constOf(v);
+}
+function studentValue(answer, fmt){
+  if(fmt.kind === "value") return evalR(String(answer).replace(/^\s*[a-z]\s*=/i, ""));
+  if(fmt.kind === "expr") return parsePoly(String(answer).replace(/^\s*=\s*/, ""));
+  if(fmt.kind === "equation") return parseAnswerList(answer).map(evalR);
+  const map = parseAnswerMap(answer, fmt.vars), out = new Map();
+  for(const v of fmt.vars){ if(map[v] == null || map[v] === "") throw new Error("答えが足りません"); out.set(v, evalR(map[v])); }
+  return out;
+}
+function sameValue(kind, a, b){
+  if(kind === "value") return R.eq(a, b);
+  if(kind === "expr") return P.eq(a, b);
+  if(kind === "equation"){
+    const uniq = xs => xs.filter((x, i) => xs.findIndex(y => R.eq(x, y)) === i);
+    const A = uniq(a), B = uniq(b);
+    return A.length === B.length && A.every(x => B.some(y => R.eq(x, y)));
+  }
+  return [...b.keys()].every(k => a.has(k) && R.eq(a.get(k), b.get(k)));
+}
+// 生徒の答えが正しいか。true / false、判定できないときは null
+function isCorrect(problem, answer){
+  let res;
+  try { res = solveProblem(problem); } catch(e){ return null; }
+  try { return sameValue(res.kind, studentValue(answer, res), res.value); } catch(e){ return false; }
+}
+// 入力された正答と比べる（文章題の「a = 9, b = 4」「商 x^2 - x - 3, 余り -7」なども、欄ごとに式として比べる）
+function splitTop(s){
+  const out = []; let d = 0, cur = "";
+  for(const ch of String(s)){ if("([{".includes(ch)) d++; if(")]}".includes(ch)) d--; if(d === 0 && /[,，、]/.test(ch)){ out.push(cur); cur = ""; } else cur += ch; }
+  out.push(cur); return out.map(x => x.trim()).filter(Boolean);
+}
+const partKey = p => p.replace(/^[^\x00-\x7F]+\s*[:：]?\s*/, "").replace(/^[a-zα-ω]\s*[=＝]\s*/i, "").trim();
+function samePart(a, b){
+  if(norm(a) === norm(b)) return true;
+  try { return P.eq(parsePoly(a), parsePoly(b)); } catch(e) { return false; }
+}
+function looseSame(answer, correct){
+  const A = splitTop(answer), C = splitTop(correct);
+  if(A.length !== C.length) return norm(answer) === norm(correct);
+  return A.every((p, i) => samePart(partKey(p), partKey(C[i])));
+}
+const safeRules = i => { try { return ruleDiagnose(i.problem, i.correct, i.answer); } catch(e) { return []; } };
+// 生徒の答えが、ある計算結果（誤りの再現など）と一致するか
+function matchesResult(answer, res){
+  try { return sameValue(res.kind, studentValue(answer, res), res.value); } catch(e){ return false; }
+}
+// 比較用（数式として読めないときの予備）: 空白・LaTeX・「x=」を除き、分数は約分して比べる
+const norm = s => {
+  let t = latexToPlain(s).replace(/\s/g,"").replace(/^[a-z]=/i,"").replace(/^\((.*)\)$/,"$1");
+  const f = t.match(/^(-?)\(?(-?\d+)\)?\/\(?(\d+)\)?$/);
+  if(f){ let n=+f[2]*(f[1]?-1:1), d=+f[3]; const k=gcd(n,d)||1; n/=k; d/=k; t = d===1?String(n):`${n}/${d}`; }
+  return t;
+};
+
+/* ---------- 簡易判定: 生徒の答えを「よくある誤り」を再現した計算結果と照らし合わせる ---------- */
+function ruleDiagnose(problem, correct, answer){
+  const hit = [];
+  const add = (id, score) => { id = Number(id); if(!hit.find(h => h.misconception_id === id)) hit.push({...MIS[id], misconception_id:id, score}); };
+  let base; try { base = solveProblem(problem); } catch(e){ return hit; }
+  const asVal = r => base.kind === "equation" ? {...base, value:[r]} : {...base, value:r};
+  const plain = normalizeMath(problem);
+  // 分数のたし算・ひき算
+  const f = plain.match(/^(-?\d+)\/(\d+)([+-])(\d+)\/(\d+)$/);
+  if(f){
+    const [a,b,op,c,d] = [+f[1],+f[2],f[3],+f[4],+f[5]], sg = op === "+" ? 1 : -1;
+    if(matchesResult(answer, asVal(R.q(Q.mk(a + sg*c, b + d))))) add(217, .9);
+    if(b !== d && (matchesResult(answer, asVal(R.q(Q.mk(a + sg*c, b)))) || matchesResult(answer, asVal(R.q(Q.mk(a + sg*c, d)))))) add(907, .8);
+  }
+  // 一次方程式の移項
+  if(base.kind === "equation" && base.value.length === 1){
+    try {
+      const [L0, R0] = (() => { const t = tokenize(problem), i = t.findIndex(x => x.t === "="); return [parseExpr(t.slice(0, i)), parseExpr(t.slice(i + 1))]; })();
+      const x = base.vars[0];
+      if(P.degree(L0) <= 1 && P.degree(R0) <= 1){
+        const lx = L0.get(x) || new Map(), rx = R0.get(x) || new Map(), lc = P.constOf(L0), rc = P.constOf(R0);
+        const ax = R.sub(lx, rx), ax2 = R.add(lx, rx);
+        if(!R.isZero(ax2) && !R.isZero(rx) && !R.isZero(lc) && matchesResult(answer, asVal(R.div(R.add(rc, lc), ax2)))) add(1214, .88);   // 両方の項の符号を変えずに移項
+        if(!R.isZero(ax) && !R.isZero(lc) && matchesResult(answer, asVal(R.div(R.add(rc, lc), ax)))) add(1971, .86);   // 定数項の符号を変えずに移項
+        if(!R.isZero(ax2) && !R.isZero(rx) && matchesResult(answer, asVal(R.div(R.sub(rc, lc), ax2)))) add(1214, .82);  // 文字の項の符号を変えずに移項
+      }
+    } catch(e) {}
+  }
+  const tryOpt = (opt, id, score) => { try { if(matchesResult(answer, solveProblem(problem, opt))) add(id, score); } catch(e) {} };
+  tryOpt({negTimesNeg:true}, 1597, .84);
+  tryOpt({squareAsDouble:true}, 2316, .8);
+  if(!hit.some(h => h.misconception_id === 1597 || h.misconception_id === 2316)){   // 2つの誤りが重なった場合
+    try { if(matchesResult(answer, solveProblem(problem, {negTimesNeg:true, squareAsDouble:true}))){ add(1597, .7); add(2316, .68); } } catch(e) {}
+  }
+  // 答えの符号だけが逆
+  if(!hit.length){
+    try {
+      if(base.kind === "value" && matchesResult(answer, {...base, value:R.neg(base.value)})) add(2119, .55);
+      if(base.kind === "equation" && base.value.length === 1 && matchesResult(answer, {...base, value:[R.neg(base.value[0])]})) add(1196, .55);
+    } catch(e) {}
+  }
+  return hit.sort((x,y) => y.score - x.score);
+}
+
+/* ===== 途中式の診断（どこで・なぜ間違えたか） =====
+   途中式を1行ずつ確かめ、最初に正しくなくなった行を見つける。
+   その行への変形を「よくある誤り」を再現した計算と照らし合わせて、原因を日本語で説明する。
+   計算で確かめた結果なので、チームのモデルや Gemini の推定より優先して表示する。 */
+const UNIT = {
+  neg: "正の数・負の数（中1）", expr: "文字式・式の計算（中1・中2）", lin: "一次方程式（中1）", sys: "連立方程式（中2）",
+  exp: "式の展開と因数分解（中3）", sqrt: "平方根（中3）", quad: "二次方程式（中3）", elem: "小学校の計算（分数・小数・四則）",
+  ratio: "比・割合・速さ（小6〜中1）",
+};
+const numStr = r => { const t = R.str(r); return t.startsWith("-") ? `(${t})` : t; };          // わり算の式の中で使う
+const termStr = (r, x) => P.str(x ? P.mul(P.c(r), P.v(x)) : P.c(r));                           // -3x、+10 など
+const withSign = t => t.startsWith("-") ? t : "+" + t;
+function lineSides(line){
+  const t = tokenize(line), i = t.findIndex(x => x.t === "=");
+  if(i < 0 || t.slice(i + 1).some(x => x.t === "=")) return null;
+  return [parseExpr(t.slice(0, i)), parseExpr(t.slice(i + 1))];
+}
+// 途中式を、判定できる1行ずつに整える（「= 8」のような行は、前の行の左辺を補う）
+function stepChain(steps, res){
+  const out = []; let lhs = null;
+  (steps || []).forEach((raw, idx) => {
+    let s = cleanLine(raw); if(!s) return;
+    if(res.kind === "value" || res.kind === "expr") s = s.split(/[=＝]/).pop().trim();
+    else if(/^[=＝]/.test(s)){ if(!lhs) return; s = `${lhs} ${s}`; }
+    else { const m = s.match(/^([^=＝]+)[=＝]/); if(m) lhs = m[1].trim(); }
+    if(s) out.push({n: idx + 1, raw: cleanLine(raw), s});
+  });
+  return out;
+}
+// その行が正しいか（数の計算・文字式は値が等しいか、方程式は正しい解を代入して成り立つか）。判定できないときは null
+function lineHolds(line, res){
+  try {
+    if(res.kind === "value"){ const v = parsePoly(line); return P.isConst(v) ? R.eq(P.constOf(v), res.value) : null; }
+    if(res.kind === "expr") return P.eq(parsePoly(line), res.value);
+    const sides = lineSides(line); if(!sides) return null;
+    const d = P.sub(sides[0], sides[1]);
+    if(d.size === 0 || P.vars(d).some(v => !res.vars.includes(v))) return null;
+    const envs = res.kind === "system" ? [res.value] : res.value.map(r => new Map([[res.vars[0], r]]));
+    return envs.every(env => R.isZero(P.evalAt(d, env)));
+  } catch(e){ return null; }
+}
+// 誤りを再現した計算（OPT）で、その行が説明できるか
+const VARIANTS = [
+  {opt: {negTimesNeg: true}, id: 1597, unit: "neg", title: "負の数どうしのかけ算の符号を間違えている",
+   why: "負の数どうしをかけた結果を負にしています。負 × 負 は正です。"},
+  {opt: {squareAsDouble: true}, id: 2316, unit: "neg", title: "2乗を2倍と取り違えている",
+   why: "2乗を「2倍」として計算しています。たとえば 3² は 3 × 3 = 9 です。"},
+  {opt: {leftToRight: true}, id: 1507, unit: "neg", title: "かけ算・わり算を先に計算していない",
+   why: "左から順に計算しています。かけ算・わり算は、たし算・ひき算より先に計算します。"},
+  {opt: {distFirstOnly: true}, id: 220, unit: "expr", title: "かっこを外すとき、後ろの項にかけ忘れている",
+   why: "かっこの前の数を、かっこの中の最初の項にしかかけていません。中のすべての項にかけます（分配法則）。"},
+  {opt: {negParenFirstOnly: true}, id: 583, unit: "expr", title: "かっこの前のマイナスを、後ろの項に反映していない",
+   why: "かっこの前のマイナスを、最初の項にしか反映していません。−(a − b) は −a + b になります。"},
+];
+function variantExplains(prev, cur, res){
+  for(const v of VARIANTS){
+    try {
+      const alt = solveProblem(prev, v.opt);
+      if(alt.kind !== res.kind || alt.text === solveProblem(prev).text) continue;
+      if(lineHolds(cur, alt) === true) return v;
+    } catch(e) {}
+  }
+  return null;
+}
+// 一次方程式の1行の変形を調べる（移項・わり算）
+function explainLinearStep(prev, cur, x, n){
+  const A0 = lineSides(prev), C = lineSides(cur);
+  if(!A0 || !C || [...A0, ...C].some(p => P.degree(p) > 1)) return null;
+  const [L, Rt] = A0, co = (p, k) => p.get(k) || new Map();
+  const lx = co(L, x), lc = P.constOf(L), rx = co(Rt, x), rc = P.constOf(Rt);
+  const onlyX = p => p.size > 0 && [...p.keys()].every(k => k === x), onlyC = p => P.isConst(p);
+  let form = null;
+  if(onlyX(C[0]) && onlyC(C[1])) form = {a: co(C[0], x), b: P.constOf(C[1]), side: "left"};
+  else if(onlyC(C[0]) && onlyX(C[1])) form = {a: co(C[1], x), b: P.constOf(C[0]), side: "right"};
+  if(!form) return null;
+  const same = (a, b, va, vb) => (R.eq(a, va) && R.eq(b, vb)) || (R.eq(a, R.neg(va)) && R.eq(b, R.neg(vb)));
+  const sol = (a, b) => R.isZero(a) ? null : R.div(b, a);
+  const sameSol = (a, b, va, vb) => { const s1 = sol(a, b), s2 = sol(va, vb); return s1 && s2 && R.eq(s1, s2); };
+  const at = `途中式の${n}行目「${cur}」`;
+
+  // 前の行がすでに「ax = b」で、この行が「x = c」→ わり算の誤り
+  const prevPure = (onlyX(L) && onlyC(Rt)) || (onlyC(L) && onlyX(Rt));
+  const a0 = onlyX(L) ? lx : rx, b0 = onlyX(L) ? rc : lc;
+  if(prevPure && R.eq(form.a, R.int(1)) && !R.eq(a0, R.int(1))){
+    const c = form.b, ok = R.div(b0, a0);
+    const msg = (title, id, why) => ({title, id, unit: "lin", detail: `${at}：${why}正しくは ${x} = ${R.str(ok)} です。`});
+    if(!R.isZero(b0) && R.eq(c, R.div(a0, b0))) return msg("わる数とわられる数を逆にしている", 195, `${R.str(b0)} ÷ ${numStr(a0)} を計算するところを、${R.str(a0)} ÷ ${numStr(b0)} にしています。`);
+    if(R.eq(c, R.neg(ok))) return msg("両辺をわるときに符号を間違えている", R.toQ(a0).n < 0 ? 1196 : 2119, `両辺を ${R.str(a0)} でわるときに、答えの符号を間違えています（${R.str(b0)} ÷ ${numStr(a0)} = ${R.str(ok)}）。`);
+    if(R.eq(c, R.sub(b0, a0))) return msg("わり算の代わりにひき算をしている", 1190, `両辺を ${R.str(a0)} でわるところを、${R.str(b0)} − ${numStr(a0)} とひき算しています。`);
+    if(R.eq(c, R.mul(b0, a0))) return msg("わり算の代わりにかけ算をしている", 975, `両辺を ${R.str(a0)} でわるところを、${R.str(b0)} × ${numStr(a0)} とかけ算しています。`);
+    if(R.eq(c, R.add(b0, a0))) return msg("わり算の代わりにたし算をしている", 1134, `両辺を ${R.str(a0)} でわるところを、たし算しています。`);
+    return null;
+  }
+
+  // 移項: x の項を一方の辺に、数の項をもう一方の辺に集めている
+  const left = form.side === "left";
+  const xMoved = left ? rx : lx, cMoved = left ? lc : rc;          // 移した項（移す前の符号）
+  const A = left ? R.sub(lx, rx) : R.sub(rx, lx), B = left ? R.sub(rc, lc) : R.sub(lc, rc);
+  const Ax = left ? R.add(lx, rx) : R.add(rx, lx), Bc = left ? R.add(rc, lc) : R.add(lc, rc);
+  const cands = [];
+  if(!R.isZero(xMoved) && !R.isZero(cMoved)) cands.push({k: "both", a: Ax, b: Bc});
+  if(!R.isZero(cMoved)) cands.push({k: "const", a: A, b: Bc});
+  if(!R.isZero(xMoved)) cands.push({k: "x", a: Ax, b: B});
+  const hit = cands.find(v => same(form.a, form.b, v.a, v.b)) || cands.find(v => sameSol(form.a, form.b, v.a, v.b));
+  if(!hit) return null;
+  const from = left ? "右辺" : "左辺", to = left ? "左辺" : "右辺", cFrom = left ? "左辺" : "右辺", cTo = left ? "右辺" : "左辺";
+  const parts = [];
+  if(hit.k !== "const") parts.push(`${from}の ${withSign(termStr(xMoved, x))} を${to}に移すときは ${withSign(termStr(R.neg(xMoved), x))}`);
+  if(hit.k !== "x") parts.push(`${cFrom}の ${withSign(termStr(cMoved))} を${cTo}に移すときは ${withSign(termStr(R.neg(cMoved)))}`);
+  const right = left ? `${termStr(A, x)} = ${R.str(B)}` : `${R.str(B)} = ${termStr(A, x)}`;
+  const title = {both: "移項するときに符号を変えていない", const: "数の項を移項するときに符号を変えていない", x: "文字の項を移項するときに符号を変えていない"}[hit.k];
+  return {title, id: hit.k === "const" ? 1971 : 1214, unit: "lin",
+    detail: `${at}：${parts.join("、")} にします（移項すると符号が変わります）。正しくは「${right}」です。`};
+}
+// 文章題: 生徒が最初に立てた式を手がかりに、「式の立て方」と「その後の計算」のどちらで間違えたかを分ける
+function explainWordProblem(item){
+  const steps = (item.steps || []).map(String).filter(x => x.trim());
+  const k = steps.findIndex(x => /[=＝]/.test(x) && /[a-z]/i.test(normalizeMath(x)));
+  if(k < 0) return null;
+  const setup = steps[k], at = `途中式の${k + 1}行目`;
+  let res; try { res = solveProblem(setup); } catch(e){ return null; }
+  if(res.kind !== "equation" && res.kind !== "system") return null;
+  const unit = item.unit || (res.kind === "system" ? "sys" : "lin");
+  // 立てた式の解が正答と合うか（正答が入力されているときだけ分かる）、生徒の答えが立てた式の解として合っているか
+  const setupOk = item.how === "input" ? (matchesResult(item.correct, res) || looseSame(res.text, item.correct)) : null;
+  const calcOk = matchesResult(item.answer, res);
+  if(setupOk === false || (setupOk === null && calcOk)){
+    return {title: setupOk === false ? "式の立て方（立式）を間違えている" : "式の立て方（立式）を間違えている可能性がある", id: null, unit, line: k + 1,
+      detail: `${at}で立てた式「${setup}」を解くと ${res.text} になり、` +
+        (setupOk === false ? `正答（${item.correct}）と合いません。` : "生徒の答えと一致します（計算は合っています）。") +
+        "問題文の数量の関係（何と何が等しいか）を、図や表を使って一緒に確認してください。" +
+        (setupOk === false && !calcOk ? "また、その式を解く計算にも誤りがあります。" : "")};
+  }
+  // 式の立て方は正しい（または判断できない）: その式からの計算を1行ずつ確かめる
+  const e = explainMistake({problem: setup, steps: steps.slice(k + 1), answer: item.answer});
+  if(!e) return null;
+  return {...e, unit: e.unit || unit, line: e.line != null ? e.line + k + 1 : null,
+    detail: (setupOk ? `式の立て方「${setup}」は正しく、そのあとの計算で間違えています。` : `立てた式「${setup}」からの計算で間違えています。`)
+      + e.detail.replace(/途中式の(\d+)行目/, (m, n) => `途中式の${+n + k + 1}行目`)};
+}
+// 生徒の答えから、どこで・なぜ間違えたかを説明する。説明できないときは null
+function explainMistake(item){
+  let res; try { res = solveProblem(item.problem); } catch(e){ return null; }
+  if(isCorrect(item.problem, item.answer) !== false) return null;
+  const chain = stepChain(item.steps, res);
+  const where = chain.map(l => ({...l, ok: lineHolds(l.s, res)}));
+  const bad = where.findIndex(l => l.ok === false);
+  const correctText = res.text;
+
+  if(bad >= 0){
+    const cur = where[bad];
+    let prevIdx = bad - 1; while(prevIdx >= 0 && where[prevIdx].ok !== true) prevIdx--;
+    const prev = prevIdx >= 0 ? where[prevIdx].s : item.problem;
+    const at = `途中式の${cur.n}行目「${cur.raw}」`;
+    // 1. 一次方程式の移項・わり算
+    if(res.kind === "equation" && res.value.length === 1){
+      const e = explainLinearStep(prev, cur.s, res.vars[0], cur.n);
+      if(e) return {...e, line: cur.n};
+    }
+    // 2. よくある誤り（負×負、2乗と2倍、計算の順序、かっこの外し方）
+    const v = variantExplains(prev, cur.s, res);
+    if(v) return {title: v.title, id: v.id, unit: v.unit, line: cur.n, detail: `${at}：${v.why}`};
+    // 3. 分数のたし算・ひき算
+    const f = normalizeMath(prev).match(/^(-?\d+)\/(\d+)([+-])(\d+)\/(\d+)$/);
+    if(f && res.kind === "value"){
+      const [a, b, op, c, d] = [+f[1], +f[2], f[3], +f[4], +f[5]], sg = op === "+" ? 1 : -1;
+      const holds = q => lineHolds(cur.s, {...res, value: R.q(q)}) === true;
+      if(holds(Q.mk(a + sg*c, b + d))) return {title: "分母どうし・分子どうしをたしている", id: 217, unit: "elem", line: cur.n,
+        detail: `${at}：分子どうし、分母どうしをそれぞれ計算しています。分母をそろえて（通分して）から、分子を計算します。正しくは ${correctText} です。`};
+      if(b !== d && (holds(Q.mk(a + sg*c, b)) || holds(Q.mk(a + sg*c, d)))) return {title: "通分しないで分子だけを計算している", id: 907, unit: "elem", line: cur.n,
+        detail: `${at}：分母をそろえずに分子だけを計算しています。先に通分します。正しくは ${correctText} です。`};
+    }
+    // 4. 方程式の途中の、数だけの計算（x = 15 − 7 → x = 9 など）
+    if(res.kind === "equation" || res.kind === "system"){
+      try {
+        const a2 = lineSides(prev), c2 = lineSides(cur.s);
+        const isVarEqConst = sd => sd && sd[0].size === 1 && P.vars(sd[0]).length === 1 && P.degree(sd[0]) === 1 && R.eq(sd[0].values().next().value, R.int(1)) && P.isConst(sd[1]);
+        if(isVarEqConst(a2) && isVarEqConst(c2) && P.vars(a2[0])[0] === P.vars(c2[0])[0]){
+          const rhs = prev.split(/[=＝]/).pop().trim();
+          return {title: "数の計算を間違えている", id: null, unit: "neg", line: cur.n,
+            detail: `${at}：「${rhs}」の計算が合っていません。正しくは ${R.str(P.constOf(a2[1]))} です。`};
+        }
+      } catch(e) {}
+    }
+    // 5. 符号だけが逆
+    if(res.kind === "value"){ try { const v2 = parsePoly(cur.s); if(P.isConst(v2) && R.eq(P.constOf(v2), R.neg(res.value))) return {title: "符号を間違えている", id: 2119, unit: "neg", line: cur.n, detail: `${at}：値の大きさは合っていますが、符号が逆です。正しくは ${correctText} です。`}; } catch(e) {} }
+    // 6. どの誤りにも当てはまらないとき: 場所だけを伝える
+    const unit = res.kind === "system" ? "sys" : res.kind === "expr" ? "expr" : res.kind === "value" ? "neg" : res.value.length > 1 ? "quad" : "lin";
+    const hint = res.kind === "equation" || res.kind === "system"
+      ? `この行は、正しい解（${correctText}）を代入すると成り立ちません。直前の「${prev}」からの変形を見直してください。`
+      : `この行で計算が合わなくなっています（正しくは ${correctText}）。直前の「${prev}」からの計算を見直してください。`;
+    return {title: "途中の計算で間違えている", id: null, unit, line: cur.n, detail: `${at}：${hint}`};
+  }
+
+  // 途中式はすべて正しい（または途中式がない）のに、答えが違うとき
+  const fmt = {kind: res.kind, vars: res.vars};
+  let stu; try { stu = studentValue(item.answer, fmt); } catch(e){ stu = null; }
+  if(stu && res.kind === "system"){
+    const [vx, vy] = res.vars;
+    if(res.vars.length === 2 && R.eq(stu.get(vx), res.value.get(vy)) && R.eq(stu.get(vy), res.value.get(vx)))
+      return {title: `${vx} と ${vy} の値を取り違えている`, id: 1219, unit: "sys", line: null, detail: `求めた2つの値を、${vx} と ${vy} で逆に答えています。正しくは ${correctText} です。`};
+    const okVars = res.vars.filter(v => R.eq(stu.get(v), res.value.get(v))), ngVars = res.vars.filter(v => !okVars.includes(v));
+    if(okVars.length && ngVars.length)
+      return {title: `${ngVars.join("、")} を求める計算で間違えている`, id: null, unit: "sys", line: null,
+        detail: `${okVars.map(v => `${v} = ${R.str(res.value.get(v))}`).join("、")} は正しく求められています。そのあと ${ngVars.join("、")} を求めるとき（代入した式の計算）を見直してください。正しくは ${correctText} です。`};
+  }
+  if(stu && res.kind === "equation" && res.value.length > 1){
+    if(stu.length === res.value.length && stu.every(s => res.value.some(r => R.eq(s, R.neg(r)))))
+      return {title: "解の符号を逆にしている", id: 2436, unit: "quad", line: null,
+        detail: `因数分解した式のかっこの中の数を、そのまま解にしています。(x − a)(x − b) = 0 の解は x = a, b です。正しくは ${correctText} です。`};
+    if(stu.length < res.value.length && stu.every(s => res.value.some(r => R.eq(s, r)))){
+      const pm = res.value.length === 2 && R.eq(res.value[0], R.neg(res.value[1]));
+      return {title: pm ? "負の解を書き落としている" : "解を1つ書き落としている", id: pm ? 132 : null, unit: "quad", line: null,
+        detail: pm ? `x² = ${R.str(R.mul(res.value[1], res.value[1]))} のような式では、解は正と負の2つあります。正しくは ${correctText} です。`
+                   : `この二次方程式の解は2つあります。正しくは ${correctText} です。`};
+    }
+  }
+  if(chain.length && where.every(l => l.ok !== false) && where.some(l => l.ok === true))
+    return {title: "最後の答えを書き写すときに間違えている", id: null, unit: res.kind === "system" ? "sys" : "lin", line: null,
+      detail: `途中式は正しく計算できていますが、最後に書いた答え（${item.answer}）が途中式の結果と合っていません。正しくは ${correctText} です。`};
+  // 途中式がないとき: 答えだけから、よくある誤りを再現できるか
+  const hits = ruleDiagnose(item.problem, item.correct, item.answer);
+  if(hits.length){ const h = hits[0], ja = JA[String(h.misconception_id)];
+    return {title: ja ? ja[0] : h.misconception_name, id: h.misconception_id, unit: null, line: null,
+      detail: `途中式がないため、答えから推定しました。このミスをすると、生徒の答え（${item.answer}）と一致します。正しくは ${correctText} です。`}; }
+  return null;
+}
+const unitName = k => UNIT[k] || k || null;
+
+const MIS = {
+  "1971":{misconception_name:"Confuses the inverse operations of addition and subtraction when rearranging equations"},
+  "1214":{misconception_name:"When solving an equation, uses the same operation rather than the inverse."},
+  "1597":{misconception_name:"Believes multiplying two negatives gives a negative answer"},
+  "2316":{misconception_name:"Mixes up squaring and multiplying by 2 or doubling"},
+  "2119":{misconception_name:"Ignores the negative sign"},
+  "1196":{misconception_name:"When solving an equation where there is a negative sign in front of the variable at the final stage, believes they can ignore it and treat it as if it's positive"},
+  "217":{misconception_name:"When adding fractions, adds the numerators and denominators"},
+  "907":{misconception_name:"Does not find a common denominator when adding/subtracting fractions"}
+};
+
+/* ===== 状態 ===== */
+const S = {step:0, img:null, sample:false, items:null, crop:null, sel:null, diag:null, rep:null, skipped:[], judged:0};
+// 自動読み取りを使えない：デモモードで自分の画像を使う、または本番でも読み取りのキーが未設定
+const manualMode = () => (!CFG.live && !S.sample)
+  || (CFG.web && !CFG.ocrReady)
+  || (!CFG.web && CFG.claude && !CFG.images);
+const NAMES = ["1 撮影","2 読み取り確認","3 診断","4 講師レポート"];
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function drawNav(){
+  const reach = [true, !!S.img, !!S.items, !!S.rep];
+  $("#steps").innerHTML = NAMES.map((n,i)=>`<button ${S.step===i?'aria-current="step"':''} ${reach[i]?'':'disabled'} data-s="${i}">${n}</button>`).join("");
+  document.querySelectorAll("#steps button").forEach(b => b.onclick = () => go(+b.dataset.s));
+}
+function go(n){S.step=n;render()}
+function render(){drawNav();[v0,v1,v2,v3][S.step]()}
+
+/* ===== サンプル答案（手書き風）を描画 ===== */
+function makeSample(){
+  const c = document.createElement("canvas"); c.width=720; c.height=520;
+  const x = c.getContext("2d");
+  x.fillStyle="#fff"; x.fillRect(0,0,720,520);
+  x.strokeStyle="#cfd8e8"; x.lineWidth=1;
+  for(let y=20;y<520;y+=28){x.beginPath();x.moveTo(0,y);x.lineTo(720,y);x.stroke()}
+  x.fillStyle="#2b3a67"; x.font="italic 22px 'Hiragino Maru Gothic ProN','Zen Kaku Gothic New',sans-serif";
+  x.fillText("数学 計算テスト  （氏名欄は撮影前にマスク）", 30, 50);
+  TRUTH.forEach(t => {
+    const b = BOX[t.q], y0 = b[1]*520;
+    x.font="italic 24px 'Hiragino Maru Gothic ProN','Zen Kaku Gothic New',sans-serif";
+    x.fillText("("+t.q+")  "+t.problem, 34, y0+28);
+    x.font="italic 20px 'Hiragino Maru Gothic ProN','Zen Kaku Gothic New',sans-serif";
+    t.steps.forEach((s,i)=> x.fillText(s, 90+i*0, y0+54+i*22 - (t.steps.length>2?18:0)));
+  });
+  return c;
+}
+
+/* ===== 1 撮影 ===== */
+function v0(){
+  $("#view").innerHTML = `<section class="panel">
+    <h2>答案を撮影する</h2>
+    <p class="lead">未採点の答案が読み取りやすいです。赤ペンの丸やバツは文字認識の邪魔になります。</p>
+    <div class="drop">
+      <p>iPhoneではカメラが起動します。</p>
+      <div class="row" style="justify-content:center">
+        <label class="btn" style="margin:0;display:inline-flex;align-items:center;color:#fff;font-size:16px;cursor:pointer;background:var(--accent);border-radius:8px;padding:0 16px">撮影・画像を選ぶ
+          <input id="file" type="file" accept="image/*" capture="environment" hidden></label>
+        <button class="btn ghost" id="sample">サンプル答案で試す</button>
+      </div>
+    </div>
+    ${S.img?`<div style="margin-top:14px"><canvas id="prev"></canvas></div>
+      ${manualMode()?`<p class="notice">${CFG.web
+        ? "読み取りサービス（GeminiかMathpix）のキーが未設定のため、画像を自動で読み取れません。"
+        : CFG.claude ? "この環境では画像をClaudeに送れないため、自動で読み取れません。"
+        : "デモモードでは画像の自動読み取りを使えません。"}次の画面で、画像を見ながら問題と生徒の答えを入力してください。正答の計算と誤りの判定は、入力した内容で行います。</p>`:""}
+      ${!manualMode() && CFG.claude && !CFG.web ? `<p class="sub">Claudeが答案を読み取ります。30秒〜1分ほどかかります。初回だけ、Claudeの利用と画像の送信を許可するか確認が出ます。</p>`:""}
+      <div class="row" style="margin-top:12px"><button class="btn" id="run">${manualMode()?"入力画面へ進む":"読み取りを開始"}</button></div>`:""}
+  </section>`;
+  const setImg = (img, sample) => { S.img = img; S.sample = sample; S.items=null; S.diag=null; S.rep=null; render();
+    if(CFG.web && (!CFG.passcodeRequired || PASSCODE)) loadTeamModel().catch(() => {}); };
+  $("#sample").onclick = () => setImg(makeSample(), true);
+  $("#file").onchange = e => { const f=e.target.files[0]; if(!f) return;
+    const im=new Image();
+    im.onload=()=>{const c=document.createElement("canvas");const k=Math.min(1,1400/im.width);c.width=im.width*k;c.height=im.height*k;c.getContext("2d").drawImage(im,0,0,c.width,c.height);setImg(c, false)};
+    im.onerror=()=>{ const p=document.createElement("p"); p.className="err"; p.setAttribute("role","alert"); p.textContent="この画像は開けませんでした。JPEGかPNGの画像を選んでください。"; $(".drop").appendChild(p); };
+    im.src=URL.createObjectURL(f); };
+  if(S.img){ const p=$("#prev"); p.width=S.img.width; p.height=S.img.height; p.getContext("2d").drawImage(S.img,0,0);
+    $("#run").onclick = async e => { const b=e.target; b.disabled=true;
+      const who = CFG.web ? CFG.ocrName : CFG.claude ? "Claude" : "サンプル";
+      b.textContent = manualMode() ? "準備中…" : `${who}で読み取り中…`;
+      const done = manualMode() ? () => {} : withStop(b);
+      try { S.items = await Services.ocr(S.img); S.sel=null; done();
+        if(!S.items.length){ fail(b,"読み取りを開始","問題が見つかりませんでした。答案全体が写るように撮り直すか、もう一度試してください。"); return; }
+        go(1);
+      } catch(err){ done();
+        if(err.code === "cancelled"){ b.disabled=false; b.textContent="読み取りを開始"; return; }
+        fail(b, manualMode() ? "入力画面へ進む" : "読み取りを開始", err.message); } }; }
+}
+
+/* ===== 2 読み取り確認（手入力 + 範囲を囲んで再解析） ===== */
+function v1(){
+  const low = S.items.filter(i=>i.confidence<.8).length, man = manualMode();
+  $("#view").innerHTML = `<section class="panel">
+    <h2>${man?"問題と答えを入力する":"読み取り結果を確認する"}</h2>
+    <p class="lead">${man
+      ? "画像を見ながら、問題ごとに生徒の答えと、問題の式（文章を含む問題なら問題文）を入力してください。分数は 1/2、累乗は 2^2 か 2²、掛け算は × か * で書けます。"
+      : `${low?`信頼度が低い ${low} 問を黄色で示しています。`:"すべて信頼度が高い結果です。"}画像上を指でなぞって範囲を選ぶと、その部分だけ再解析します。`}
+      式だけでは正答を計算できない問題（文章題など）は、「正答」を入れるか、先生の丸つけで判定します。</p>
+    <div class="grid two">
+      <div>
+        <canvas id="cv"></canvas>
+        <div class="row" style="margin-top:10px" ${man?"hidden":""}>
+          <select id="qsel" aria-label="再解析する問題" style="width:auto">${S.items.map(i=>`<option value="${i.q}">${esc(qName(i))}</option>`).join("")}</select>
+          <button class="btn" id="re" disabled>この範囲を再解析</button>
+        </div>
+        <div class="thumb" id="thumb"></div>
+      </div>
+      <div><div id="list"></div><button class="btn ghost" id="addq">問題を追加</button></div>
+    </div>
+    <div class="row" style="margin-top:14px"><button class="btn" id="next">この内容で診断する</button></div>
+    <details><summary>読み取り結果（整形後のJSON）を見る</summary><pre id="json"></pre></details>
+  </section>`;
+  const cv=$("#cv"); cv.width=S.img.width; cv.height=S.img.height;
+  const ctx=cv.getContext("2d");
+  let rect=null, start=null;
+  const paint=()=>{ctx.drawImage(S.img,0,0);
+    S.items.forEach(i=>{ if(i.confidence<.8){const[b0,b1,b2,b3]=i.bbox;ctx.strokeStyle="#b8741a";ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.strokeRect(b0*cv.width,b1*cv.height,b2*cv.width,b3*cv.height);ctx.setLineDash([])}});
+    if(rect){ctx.strokeStyle="#c8372d";ctx.lineWidth=3;ctx.fillStyle="rgba(200,55,45,.12)";ctx.fillRect(...rect);ctx.strokeRect(...rect)}};
+  paint();
+  const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
+  cv.onpointerdown=e=>{if(man)return;cv.setPointerCapture(e.pointerId);start=pt(e)};
+  cv.onpointermove=e=>{if(!start)return;const p=pt(e);rect=[Math.min(start[0],p[0]),Math.min(start[1],p[1]),Math.abs(p[0]-start[0]),Math.abs(p[1]-start[1])];paint()};
+  cv.onpointerup=()=>{start=null;if(rect&&rect[2]>20&&rect[3]>14){
+    const cy=(rect[1]+rect[3]/2)/cv.height; const hit=S.items.find(i=>i.bbox&&cy>=i.bbox[1]&&cy<=i.bbox[1]+i.bbox[3]);
+    if(hit)$("#qsel").value=hit.q;
+    const c=document.createElement("canvas");c.width=rect[2];c.height=rect[3];c.getContext("2d").drawImage(S.img,rect[0],rect[1],rect[2],rect[3],0,0,rect[2],rect[3]);
+    S.crop=c;$("#thumb").innerHTML="<label>選んだ範囲</label>";$("#thumb").appendChild(c);$("#re").disabled=false}};
+  $("#re").onclick=async e=>{const b=e.target;b.disabled=true;b.textContent="再解析中…";const q=+$("#qsel").value;
+    const done = withStop(b);
+    try{
+      const r=await Services.reocr(S.crop,q); done();
+      if(!r.steps.length){ fail(b,"この範囲を再解析","この範囲から式を読み取れませんでした。少し広めに囲んでください。"); return; }
+      const it=S.items.find(i=>i.q===q);Object.assign(it,r,{fixed:true,edited:true});rect=null;S.crop=null;v1();
+    }catch(err){ done();
+      if(err.code === "cancelled"){ b.disabled=false; b.textContent="この範囲を再解析"; return; }
+      fail(b,"この範囲を再解析", err.message); }};
+  $("#next").onclick=async e=>{const b=e.target;
+    if(!S.items.some(i=>(i.problem.trim()||(i.question||"").trim())&&String(i.answer).trim())){ fail(b,"この内容で診断する","問題（式か問題文）と生徒の答えを、少なくとも1問入力してください。"); return; }
+    b.disabled=true;b.textContent=CFG.web?"誤概念モデルで診断中…":CFG.claude?"Claudeが診断中…（30秒ほど）":"判定中…";
+    const done = withStop(b);
+    try{S.diag=await Services.diagnose(S.items);S.rep=await Services.report(S.diag);done();go(2)}
+    catch(err){ done();
+      if(err.code === "cancelled"){ b.disabled=false; b.textContent="この内容で診断する"; return; }
+      fail(b,"この内容で診断する",err.message)}};
+  $("#addq").onclick=()=>{ const q=Math.max(0,...S.items.map(i=>i.q))+1; S.items.push(blankItem(q)); drawList(); drawJson(); $(`#p${q}`).focus(); };
+  drawList(); drawJson();
+}
+const KIND_LABEL = {system: "連立方程式", equation: "方程式", expr: "文字式の計算", value: "計算"};
+function answerFieldsHtml(i){
+  const fmt = answerFormat(i.problem);
+  if(fmt.kind === "system"){
+    const map = parseAnswerMap(i.answer, fmt.vars);
+    return `<fieldset class="ans"><legend>生徒の答え（${fmt.vars.join(", ")} の値）</legend><div class="ansrow">${fmt.vars.map(v =>
+      `<label class="ansvar" for="a${i.q}_${v}"><span>${v} =</span><input type="text" id="a${i.q}_${v}" data-q="${i.q}" data-k="ans" data-var="${v}" value="${esc(map[v] || "")}" autocomplete="off"></label>`).join("")}</div></fieldset>`;
+  }
+  if(fmt.kind === "equation"){
+    const v = fmt.vars[0];
+    return `<label for="a${i.q}">生徒の答え（${v} =）</label><input type="text" id="a${i.q}" data-q="${i.q}" data-k="ans" value="${esc(parseAnswerList(i.answer).join(", "))}" placeholder="${fmt.multi ? "例：2, -3（解が2つのときは , で区切る）" : "例：3"}" autocomplete="off">`;
+  }
+  const ph = !i.problem.trim() ? "例：a = 9, b = 4（解答欄が複数なら , で区切る）" : fmt.kind === "expr" ? "例：3x - 2" : "例：-16";
+  return `<label for="a${i.q}">生徒の答え</label><input type="text" id="a${i.q}" data-q="${i.q}" data-k="ans" value="${esc(String(i.answer).replace(/^\s*=\s*/, ""))}" placeholder="${ph}" autocomplete="off">`;
+}
+const fmtKey = f => `${f.kind}:${f.vars.join(",")}:${f.multi}`;
+const kindLabel = (problem, fmt, question) => problem.trim() ? (fmt.kind === "equation" && fmt.multi ? "二次方程式" : KIND_LABEL[fmt.kind]) : (question || "").trim() ? "文章を含む問題" : "";
+const opt = (v, label, cur) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(label)}</option>`;
+function drawList(){
+  $("#list").innerHTML = S.items.map(i => {
+    const fmt = answerFormat(i.problem), kind = kindLabel(i.problem, fmt, i.question);
+    i._fmt = fmtKey(fmt);
+    return `<div class="item ${i.confidence < .8 ? 'low' : ''} ${i.fixed ? 'fixed' : ''}">
+    <h3><span>${esc(qName(i))}<span class="kind" id="k${i.q}" ${kind ? "" : "hidden"}>${kind}</span>${i.unit && !inScope(i) ? `<span class="kind unit" title="${esc(SCOPE_WHY(i.unit))}">モデルの対象外</span>` : ""}</span><span class="conf">${i.manual ? "手入力" : (i.fixed ? "再解析済み " : "") + "信頼度 " + Math.round(i.confidence * 100) + "%"}</span></h3>
+    <label for="t${i.q}">問題文（文章を含む問題のとき・任意）</label><textarea id="t${i.q}" data-q="${i.q}" data-k="question" rows="2" placeholder="例：1個120円のりんごを何個か買ったら…">${esc(i.question || "")}</textarea>
+    <label for="p${i.q}">式（式だけで解ける問題のとき）</label><input type="text" id="p${i.q}" data-q="${i.q}" data-k="problem" value="${esc(i.problem)}" placeholder="例：3x + 4 = 13　連立方程式は 2x + y = 7, x - y = 2" autocomplete="off">
+    <label for="s${i.q}">途中式（1行ずつ・任意）</label><textarea id="s${i.q}" data-q="${i.q}" data-k="steps">${esc(i.steps.join("\n"))}</textarea>
+    <div class="ansbox" id="ans${i.q}">${answerFieldsHtml(i)}</div>
+    <div class="trio">
+      <div><label for="c${i.q}">正答（式で計算できない問題のとき）</label><input type="text" id="c${i.q}" data-q="${i.q}" data-k="correct_in" value="${esc(i.correct_in || "")}" placeholder="例：a = 9, b = 4" autocomplete="off"></div>
+      <div><label for="m${i.q}">先生の丸つけ</label><select id="m${i.q}" data-q="${i.q}" data-k="mark">${opt("none", "なし", i.mark || "none")}${opt("correct", "○ 正解", i.mark)}${opt("wrong", "× 不正解", i.mark)}</select></div>
+      <div><label for="u${i.q}">単元</label><select id="u${i.q}" data-q="${i.q}" data-k="unit">${opt("", "自動（式から判断）", i.unit || "")}${UNITS_ALL.map(u => opt(u, u, i.unit)).join("")}</select></div>
+    </div></div>`;
+  }).join("");
+  S.items.forEach(bindItem);
+}
+function bindItem(it){
+  document.querySelectorAll(`#list [data-q="${it.q}"][data-k]`).forEach(el => {
+    const k = el.dataset.k;
+    el.oninput = () => {
+      if(k === "steps") it.steps = el.value.split("\n").filter(s => s.trim());
+      if(k === "question"){ it.question = el.value; it.question_en = ""; it.edited = true; }   // 直した問題文は診断のときに英訳し直す
+      if(k === "correct_in") it.correct_in = el.value;
+      if(k === "mark") it.mark = el.value;
+      if(k === "unit") it.unit = el.value;
+      if(k === "problem"){ it.problem = el.value; it.problem_latex = el.value; it.edited = true; }   // 直した式で正答を計算し直す
+      if(k === "ans"){
+        const fmt = answerFormat(it.problem), parts = {};
+        if(fmt.kind === "system") document.querySelectorAll(`#ans${it.q} [data-k="ans"]`).forEach(x => parts[x.dataset.var] = x.value);
+        else parts.value = el.value;
+        it.answer = formatAnswer(fmt, parts); it.edited = true;
+      }
+      it.confidence = Math.max(it.confidence, .95); drawJson();
+    };
+    // 問題を直し終えて、解答欄の形（方程式 → 連立方程式など）が変わったときだけ、その問題の解答欄を作り直す
+    if(k === "problem") el.onchange = () => {
+      const fmt = answerFormat(it.problem), key = fmtKey(fmt), chip = $(`#k${it.q}`), kind = kindLabel(it.problem, fmt, it.question);
+      chip.textContent = kind; chip.hidden = !kind;
+      if(key === it._fmt) return;
+      it._fmt = key;
+      // 次に触った欄（答えの欄など）からカーソルが外れないよう、作り直した後に戻す
+      setTimeout(() => {
+        const focusId = document.activeElement?.id;
+        $(`#ans${it.q}`).innerHTML = answerFieldsHtml(it);
+        bindItem(it);
+        if(focusId && document.getElementById(focusId)) document.getElementById(focusId).focus();
+      }, 0);
+    };
+  });
+}
+function drawJson(){ $("#json").textContent=JSON.stringify({test_id:"demo-001",items:S.items.map(({q,label,question,question_en,problem_latex,problem,steps,answer,correct,correct_in,mark,unit,confidence})=>({q_no:q,label:label||undefined,question:question||undefined,question_en:question_en||undefined,question_latex:problem_latex||problem,student_steps:steps,student_answer:answer,correct_answer:correct_in||correct,teacher_mark:mark,unit:unit||undefined,confidence:Math.round(confidence*100)/100}))},null,2) }
+function fail(btn,label,msg){
+  btn.disabled=false; btn.textContent=label;
+  let el=btn.parentElement.querySelector(".err"); if(!el){el=document.createElement("p");el.className="err";el.setAttribute("role","alert");btn.parentElement.appendChild(el)}
+  el.textContent=msg;
+}
+
+/* ===== 3 診断（赤ペン風に誤り箇所を表示） ===== */
+function misList(ms){
+  return `<ol class="mis">${ms.slice(0, 3).map(m => `<li><span>${esc(m.ja)}</span>
+    <div class="bar" role="img" aria-label="スコア ${Math.round(m.score * 100)}%"><i style="width:${Math.max(0, Math.min(1, m.score)) * 100}%"></i></div>
+    ${m.reason ? `<small>根拠：${esc(m.reason)}</small>` : ""}
+    ${m.misconception_id != null ? `<small lang="en">Eedi ${m.misconception_id}：${esc(m.misconception_name)}</small>` : `<small>Eediの一覧に当てはまるものがなく、Claudeが説明しています</small>`}</li>`).join("")}</ol>`;
+}
+function v2(){
+  $("#view").innerHTML = `<section class="panel"><h2>診断結果</h2>
+    <p class="lead">${S.judged} 問を判定し、${S.rep.length ? `${S.rep.length} 問で誤りを見つけました。` : "誤りは見つかりませんでした。"}${
+      CFG.web ? "途中式を1行ずつ確かめて、どこで・なぜ間違えたかを示しています。参考として、チームのモデル（misconception_model）の推定も載せています。"
+      : CFG.claude ? (EEDI.list ? "ClaudeがEediの誤概念リストから候補を選び、確からしい順に並べています。"
+                                : "Eediの誤概念リストが未読み込みのため、Claudeが自分の言葉で説明しています（ページ下から読み込めます）。")
+      : manualMode() ? "デモモードのため、よくある計算ミスのパターンと照らし合わせる簡易判定です。本番モードではチームのモデルが判定します。"
+      : "サンプルの応答を表示しています。"}</p>
+    ${S.skipped.length ? `<p class="notice">判定できなかった問題：${S.skipped.map(s => `${esc(s.name || "問" + s.q)}（${esc(s.why)}）`).join("、")}。読み取り確認に戻って直すと、もう一度診断できます。</p>` : ""}
+    ${S.conflicts?.length ? `<p class="notice">先生の丸つけと判定が食い違う問題：${S.conflicts.map(c => `${esc(c.name)}（丸つけは${c.mark === "correct" ? "○" : "×"}）`).join("、")}。読み取りの誤りかもしれないので、式と答えを確認してください。</p>` : ""}
+    ${S.reportError ? `<p class="notice">日本語の説明を作れませんでした（${esc(S.reportError)}）。訳がない誤概念は英語名のまま表示しています。</p>` : ""}
+    <div class="grid two"><canvas id="mk"></canvas><div id="dl">${S.rep.map(d => `<div class="card"><h3>${esc(qName(d))}　${esc(d.type)}</h3>
+      ${d.question ? `<p class="qtext">${esc(d.question)}</p>` : ""}
+      <div>生徒の答え <b>${esc(d.answer)}</b> ／ 正答 <b>${esc(d.correct || "（未入力）")}</b>${d.how === "mark" ? "（先生の丸つけで判定）" : d.how === "input" ? "（入力した正答と比較）" : ""}</div>
+      ${d.out ? `<p class="sub">単元「${esc(d.unit)}」はチームのモデルの対象外です。${esc(SCOPE_WHY(d.unit))}。</p>` : ""}
+      ${d.explain ? `<div class="where"><b>どこで間違えたか</b><p>${esc(d.explain.detail)}</p></div>` : ""}
+      ${d.rule_hits?.length && !(d.explain && d.rule_hits.some(h => h.misconception_id === d.explain.id)) ? `<p class="hit">計算で再現できたミス：<b>${d.rule_hits.map(h => esc(h.ja)).join("、")}</b>（このミスをすると、生徒の答えと一致します）</p>` : ""}
+      ${d.shown.length ? `<p class="sub">${CFG.web ? "参考：チームのモデルの推定（Eedi の誤概念）" : CFG.claude ? "参考：Claude の推定（Eedi の誤概念）" : "よくある誤りとの照合"}</p>` + misList(d.shown)
+        : d.explain || d.out ? "" : `<p class="sub">よくある計算ミスのどれにも当てはまりませんでした。途中式を確認してください。</p>`}
+      ${d.hidden ? `<p class="sub">途中式と関係が薄いモデルの候補 ${d.hidden} 件は省略しました。</p>` : ""}</div>`).join("") || '<div class="empty">全問正解です</div>'}</div></div>
+    ${S.rep.length ? `<details><summary>モデルに送った内容を見る</summary><pre>${esc(JSON.stringify(S.rep.map(d => d.request), null, 2))}</pre></details>` : ""}
+    <div class="row" style="margin-top:14px"><button class="btn" id="go3">講師向けレポートを見る</button></div></section>`;
+  const c = $("#mk"); c.width = S.img.width; c.height = S.img.height; const x = c.getContext("2d"); x.drawImage(S.img, 0, 0);
+  x.strokeStyle = "#c8372d"; x.lineWidth = 4; x.fillStyle = "#c8372d"; x.font = "bold 28px sans-serif";
+  S.diag.forEach(d => { const b = S.items.find(i => i.q === d.q)?.bbox; if(!b) return; const bx = b[0]*c.width, by = b[1]*c.height, bw = b[2]*c.width, bh = b[3]*c.height;
+    x.beginPath(); x.ellipse(bx + bw/2, by + bh/2, bw/2, bh/2 + 4, 0, 0, 7); x.stroke(); x.fillText("×", bx + bw - 30, by + 26); });
+  $("#go3").onclick = () => go(3);
+}
+
+/* ===== 4 講師レポート ===== */
+function v3(){
+  const tags = {}; S.rep.forEach(r => r.concepts.forEach(c => tags[c] = (tags[c] || 0) + 1));
+  const top = Object.entries(tags).sort((a, b) => b[1] - a[1]);
+  $("#view").innerHTML = `<section class="panel"><h2>講師向けレポート</h2>
+    <p class="lead">次の授業で優先して確認したい順に並べています。</p>
+    ${S.summary ? `<div class="card"><h3>まとめ</h3><p style="margin:0">${esc(S.summary)}</p></div>` : ""}
+    ${S.reportError ? `<div class="notice"><p style="margin:0">日本語の説明を作れませんでした（${esc(S.reportError)}）。訳がない誤概念は英語名、声かけは定型文で表示しています。</p>
+      <div class="row" style="margin-top:8px"><button class="btn" id="retryja" type="button">日本語の説明を作り直す</button></div></div>` : ""}
+    ${top.length ? `<div class="card"><h3>つまずきの単元</h3><div class="tags">${top.map(([c, n]) => `<span>${esc(c)}（${n}問）</span>`).join("")}</div></div>` : ""}
+    ${S.rep.map(r => `<div class="card"><h3>${esc(qName(r))}　${esc(r.problem || (r.question.length > 60 ? r.question.slice(0, 60) + "…" : r.question))}</h3>
+      <div>原因：<b>${esc(r.type)}</b>${r.concepts[0] ? `（${esc(r.concepts[0])}）` : ""}</div>
+      ${r.explain ? `<p class="where" style="margin:6px 0">${esc(r.explain.detail)}</p>` : r.rule_hits?.length ? `<div>計算で再現できたミス：${r.rule_hits.map(h => esc(h.ja)).join("、")}</div>` : ""}
+      <div>生徒の答え ${esc(r.answer)} ／ 正答 ${esc(r.correct || "（未入力）")}</div>
+      <p style="margin:8px 0 0"><b>声かけ・指導のヒント</b><br>${esc(r.advice)}</p>
+      ${r.untranslated ? `<p class="sub">一部の誤概念は日本語訳を取得できず、英語のまま表示しています。</p>` : ""}</div>`).join("") || '<div class="empty">指導が必要な誤りはありません</div>'}
+    <div class="row"><button class="btn ghost" id="again">別の答案を診断する</button></div></section>`;
+  $("#again").onclick = () => { S.img = S.items = S.diag = S.rep = null; S.summary = ""; go(0); };
+  const retry = $("#retryja");
+  if(retry) retry.onclick = async () => {
+    retry.disabled = true; retry.textContent = "作り直しています…";
+    try { S.rep = await Services.report(S.diag); v3(); }
+    catch(err){ fail(retry, "日本語の説明を作り直す", err.message); }
+  };
+}
+function drawCfg(info){
+  const m = $("#mode"), msgs = [];
+  drawEedi(); drawPass();
+  if(CFG.web){
+    const needPass = CFG.passcodeRequired && !PASSCODE;
+    const ok = CFG.ocrReady && MODEL.status !== "error" && !needPass;
+    m.className = "mode " + (ok ? "live" : "warn");
+    m.textContent = needPass ? "本番モード：合言葉を入れてください" : ok ? "本番モード：Gemini とチームのモデルで動いています" : "本番モード：設定が足りません";
+    msgs.push(CFG.ocrReady ? `読み取り：Gemini（${info.ocr_model || ""}）。`
+      : "Gemini のキーが未設定のため、問題と答えは手入力です（Cloudflare の環境変数 GEMINI_API_KEY を設定してください）。");
+    msgs.push({
+      idle: "チームのモデル：答案を選ぶと読み込みを始めます（初回だけ約45MBをダウンロードし、以後はブラウザに保存されます）。",
+      loading: `チームのモデル：読み込み中…${MODEL.progress ? ` ${MODEL.progress}%` : ""}`,
+      ready: `チームのモデル：誤概念 ${MODEL.ids?.length.toLocaleString()} 件を読み込み済み${MODEL.meta?.scope === "calc" ? "（計算分野に絞り込み）" : ""}（一致度 ${MODEL.check?.toFixed(3)}）。` +
+        ((MODEL.check != null && MODEL.check < .99) || MODEL.mismatch ? "データ作成時とモデルが一致していません。npm run build-data をやり直してください。" : ""),
+      error: `チームのモデル：${MODEL.error}`,
+    }[MODEL.status]);
+    msgs.push("答案の氏名欄は隠してから撮影してください。");
+    $("#modehelp").textContent = msgs.join(" ");
+    return;
+  }
+  if(CFG.claude){
+    m.className = "mode live";
+    m.textContent = "本番モード：Claude が読み取りと診断を行います";
+    msgs.push(CFG.images ? "答案の写真はClaudeが読み取ります。" : "この環境では画像をClaudeに送れないため、問題と答えは手入力です。");
+    msgs.push("初回だけ、Claudeの利用を許可するか確認が出ます。利用量は、開いている人のClaudeアカウントから使われます。");
+    msgs.push("答案の氏名欄は隠してから撮影してください。");
+    $("#modehelp").textContent = msgs.join(" ");
+    return;
+  }
+  m.className = "mode demo";
+  m.textContent = "デモモード";
+  msgs.push(location.protocol === "file:"
+    ? "index.html を直接開いているため、サーバーにつながっていません。README の手順で起動し、表示された URL を開いてください。"
+    : "サンプル答案はサンプルの応答で、自分の画像は手入力と簡易判定で動きます。画像は外部に送信されません。");
+  $("#modehelp").textContent = msgs.join(" ");
+}
+// 合言葉（Web版で APP_PASSCODE が設定されているとき）
+function drawPass(){
+  const box = $("#pass");
+  if(!CFG.web || !CFG.passcodeRequired){ box.hidden = true; return; }
+  box.hidden = false;
+  if(PASSCODE){ box.innerHTML = `<p>合言葉は入力済みです。<button class="link" id="passreset" type="button">入れ直す</button></p>`; $("#passreset").onclick = () => { setPasscode(""); drawCfg(HEALTH); }; return; }
+  box.innerHTML = `<form id="passform"><label for="passin">合言葉（チームから聞いたもの）</label>
+    <div class="row"><input type="password" id="passin" autocomplete="current-password" style="flex:1;min-width:0"><button class="btn" type="submit">確認する</button></div></form>`;
+  $("#passform").onsubmit = async e => {
+    e.preventDefault();
+    const v = $("#passin").value.trim(); if(!v) return;
+    setPasscode(v);
+    try { await api("/api/check"); drawCfg(HEALTH); }
+    catch(err){ drawCfg(HEALTH); const p = document.createElement("p"); p.className = "err"; p.setAttribute("role", "alert"); p.textContent = err.message; $("#pass").appendChild(p); }
+  };
+}
+// Eedi の誤概念リスト（サイト版のみ。server.py 版はサーバーが持っている）
+function drawEedi(){
+  const box = $("#eedi");
+  if(CFG.web || !CFG.claude){ box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = EEDI.list
+    ? `<p>Eediの誤概念リスト：<b>${EEDI.list.length.toLocaleString()} 件を読み込み済み</b>（このブラウザに保存）。<button class="link" id="eediclear" type="button">削除する</button></p>`
+    : `<p>Eediの誤概念リストが未読み込みです。チームの <b>misconception_mapping.csv</b> を読み込むと、診断がEediの誤概念に基づくようになります（このブラウザにだけ保存され、ページには含まれません）。</p>
+       <label class="btn ghost filebtn">CSVを読み込む<input id="eedifile" type="file" accept=".csv,text/csv" hidden></label>`;
+  $("#eediclear")?.addEventListener("click", () => { EEDI.list = null; EEDI.byId = new Map(); try{ localStorage.removeItem(EEDI_KEY); }catch(e){} drawEedi(); });
+  $("#eedifile")?.addEventListener("change", async e => {
+    const f = e.target.files[0]; if(!f) return;
+    try {
+      const text = await f.text(); loadEedi(text);
+      try { localStorage.setItem(EEDI_KEY, text); } catch(err) { /* 保存できなくても、このページを閉じるまでは使える */ }
+      drawEedi();
+    } catch(err) {
+      const p = document.createElement("p"); p.className = "err"; p.setAttribute("role","alert"); p.textContent = err.message; box.appendChild(p);
+    }
+  });
+}
+(async () => {
+  // 自分たちのサイト（Cloudflare Pages）なら /api/health が応答する
+  try {
+    const r = await fetch("api/health", {cache: "no-store"});
+    if(r.ok){
+      const info = await r.json();
+      if(info.ok === true){ HEALTH = info; CFG.web = true; CFG.ocrReady = !!info.ocr_ready; CFG.ocrName = info.ocr_name || "Gemini"; CFG.passcodeRequired = !!info.passcode_required; }
+    }
+  } catch(e) {}
+  // claude.ai のサイトとして開いていれば、Claude を呼べる
+  if(!CFG.web && window.claude?.use){
+    try {
+      const s = await window.claude.use("sample");
+      if(s){ SAMPLE = s; CFG.claude = true; const lim = await s.limits().catch(() => null); CFG.images = !!lim?.images; }
+    } catch(e) {}
+  }
+  drawCfg(HEALTH);
+  if(S.step === 0) render();   // 状態に合わせてボタンの文言を更新
+})();
+drawCfg({});
+render();
+</script>
+</body>
+</html>

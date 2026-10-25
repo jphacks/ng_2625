@@ -1,0 +1,15 @@
+{
+  "name": "keisan-note-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pack-model": "node scripts/pack-model.mjs",
+    "build-data": "node scripts/build-data.mjs",
+    "evaluate": "node scripts/evaluate.mjs",
+    "dev": "wrangler pages dev public",
+    "deploy": "wrangler pages deploy public --project-name keisan-note"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
