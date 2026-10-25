@@ -1,6 +1,6 @@
 # ケアレスノート
 
-[![デモ動画を見る](https://youtu.be/xANpK393fak)
+[![ケアレスノートのデモ動画](https://i.ytimg.com/vi/xANpK393fak/hqdefault.jpg)](https://youtu.be/xANpK393fak)
 
 ## 製品概要
 生徒の手書き数学答案から、つまずきの原因候補を整理し、大学生の塾講師や家庭教師の指導を支援するWebアプリ。
