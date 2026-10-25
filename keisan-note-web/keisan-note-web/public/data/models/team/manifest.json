@@ -1,0 +1,973 @@
+{
+ "format": "keisan-note-bert-v1",
+ "dtype": "f16",
+ "created": "2026-10-25T02:48:17.243Z",
+ "source": "misconception_model（メンバーが all-MiniLM-L6-v2 を Eedi の train.csv で学習させたもの）",
+ "config": {
+  "hidden_size": 384,
+  "num_attention_heads": 12,
+  "num_hidden_layers": 6,
+  "intermediate_size": 1536,
+  "layer_norm_eps": 1e-12,
+  "max_position_embeddings": 512,
+  "hidden_act": "gelu",
+  "vocab_size": 30522
+ },
+ "pooling": "mean",
+ "normalize": true,
+ "query_template": "Question: {text}\nCorrect answer: {correct}\nStudent answer: {answer}",
+ "chunks": [
+  "weights-0.bin",
+  "weights-1.bin"
+ ],
+ "tensors": [
+  {
+   "name": "embeddings.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 0,
+   "offset": 0,
+   "length": 384
+  },
+  {
+   "name": "embeddings.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 0,
+   "offset": 384,
+   "length": 384
+  },
+  {
+   "name": "embeddings.position_embeddings.weight",
+   "shape": [
+    512,
+    384
+   ],
+   "chunk": 0,
+   "offset": 768,
+   "length": 196608
+  },
+  {
+   "name": "embeddings.token_type_embeddings.weight",
+   "shape": [
+    2,
+    384
+   ],
+   "chunk": 0,
+   "offset": 197376,
+   "length": 768
+  },
+  {
+   "name": "embeddings.word_embeddings.weight",
+   "shape": [
+    30522,
+    384
+   ],
+   "chunk": 0,
+   "offset": 198144,
+   "length": 11720448
+  },
+  {
+   "name": "encoder.layer.0.attention.output.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 0,
+   "offset": 11918592,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.0.attention.output.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 0,
+   "offset": 11918976,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.0.attention.output.dense.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 0,
+   "offset": 11919360,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.0.attention.output.dense.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 0,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.0.attention.self.key.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 147456,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.0.attention.self.key.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 147840,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.0.attention.self.query.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 295296,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.0.attention.self.query.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 295680,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.0.attention.self.value.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 443136,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.0.attention.self.value.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 443520,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.0.intermediate.dense.bias",
+   "shape": [
+    1536
+   ],
+   "chunk": 1,
+   "offset": 590976,
+   "length": 1536
+  },
+  {
+   "name": "encoder.layer.0.intermediate.dense.weight",
+   "shape": [
+    1536,
+    384
+   ],
+   "chunk": 1,
+   "offset": 592512,
+   "length": 589824
+  },
+  {
+   "name": "encoder.layer.0.output.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 1182336,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.0.output.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 1182720,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.0.output.dense.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 1183104,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.0.output.dense.weight",
+   "shape": [
+    384,
+    1536
+   ],
+   "chunk": 1,
+   "offset": 1183488,
+   "length": 589824
+  },
+  {
+   "name": "encoder.layer.1.attention.output.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 1773312,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.1.attention.output.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 1773696,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.1.attention.output.dense.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 1774080,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.1.attention.output.dense.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 1774464,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.1.attention.self.key.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 1921920,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.1.attention.self.key.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 1922304,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.1.attention.self.query.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 2069760,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.1.attention.self.query.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 2070144,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.1.attention.self.value.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 2217600,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.1.attention.self.value.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 2217984,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.1.intermediate.dense.bias",
+   "shape": [
+    1536
+   ],
+   "chunk": 1,
+   "offset": 2365440,
+   "length": 1536
+  },
+  {
+   "name": "encoder.layer.1.intermediate.dense.weight",
+   "shape": [
+    1536,
+    384
+   ],
+   "chunk": 1,
+   "offset": 2366976,
+   "length": 589824
+  },
+  {
+   "name": "encoder.layer.1.output.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 2956800,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.1.output.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 2957184,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.1.output.dense.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 2957568,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.1.output.dense.weight",
+   "shape": [
+    384,
+    1536
+   ],
+   "chunk": 1,
+   "offset": 2957952,
+   "length": 589824
+  },
+  {
+   "name": "encoder.layer.2.attention.output.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 3547776,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.2.attention.output.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 3548160,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.2.attention.output.dense.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 3548544,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.2.attention.output.dense.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 3548928,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.2.attention.self.key.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 3696384,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.2.attention.self.key.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 3696768,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.2.attention.self.query.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 3844224,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.2.attention.self.query.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 3844608,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.2.attention.self.value.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 3992064,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.2.attention.self.value.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 3992448,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.2.intermediate.dense.bias",
+   "shape": [
+    1536
+   ],
+   "chunk": 1,
+   "offset": 4139904,
+   "length": 1536
+  },
+  {
+   "name": "encoder.layer.2.intermediate.dense.weight",
+   "shape": [
+    1536,
+    384
+   ],
+   "chunk": 1,
+   "offset": 4141440,
+   "length": 589824
+  },
+  {
+   "name": "encoder.layer.2.output.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 4731264,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.2.output.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 4731648,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.2.output.dense.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 4732032,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.2.output.dense.weight",
+   "shape": [
+    384,
+    1536
+   ],
+   "chunk": 1,
+   "offset": 4732416,
+   "length": 589824
+  },
+  {
+   "name": "encoder.layer.3.attention.output.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 5322240,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.3.attention.output.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 5322624,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.3.attention.output.dense.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 5323008,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.3.attention.output.dense.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 5323392,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.3.attention.self.key.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 5470848,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.3.attention.self.key.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 5471232,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.3.attention.self.query.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 5618688,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.3.attention.self.query.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 5619072,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.3.attention.self.value.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 5766528,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.3.attention.self.value.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 5766912,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.3.intermediate.dense.bias",
+   "shape": [
+    1536
+   ],
+   "chunk": 1,
+   "offset": 5914368,
+   "length": 1536
+  },
+  {
+   "name": "encoder.layer.3.intermediate.dense.weight",
+   "shape": [
+    1536,
+    384
+   ],
+   "chunk": 1,
+   "offset": 5915904,
+   "length": 589824
+  },
+  {
+   "name": "encoder.layer.3.output.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 6505728,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.3.output.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 6506112,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.3.output.dense.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 6506496,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.3.output.dense.weight",
+   "shape": [
+    384,
+    1536
+   ],
+   "chunk": 1,
+   "offset": 6506880,
+   "length": 589824
+  },
+  {
+   "name": "encoder.layer.4.attention.output.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 7096704,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.4.attention.output.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 7097088,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.4.attention.output.dense.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 7097472,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.4.attention.output.dense.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 7097856,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.4.attention.self.key.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 7245312,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.4.attention.self.key.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 7245696,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.4.attention.self.query.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 7393152,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.4.attention.self.query.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 7393536,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.4.attention.self.value.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 7540992,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.4.attention.self.value.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 7541376,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.4.intermediate.dense.bias",
+   "shape": [
+    1536
+   ],
+   "chunk": 1,
+   "offset": 7688832,
+   "length": 1536
+  },
+  {
+   "name": "encoder.layer.4.intermediate.dense.weight",
+   "shape": [
+    1536,
+    384
+   ],
+   "chunk": 1,
+   "offset": 7690368,
+   "length": 589824
+  },
+  {
+   "name": "encoder.layer.4.output.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 8280192,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.4.output.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 8280576,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.4.output.dense.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 8280960,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.4.output.dense.weight",
+   "shape": [
+    384,
+    1536
+   ],
+   "chunk": 1,
+   "offset": 8281344,
+   "length": 589824
+  },
+  {
+   "name": "encoder.layer.5.attention.output.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 8871168,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.5.attention.output.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 8871552,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.5.attention.output.dense.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 8871936,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.5.attention.output.dense.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 8872320,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.5.attention.self.key.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 9019776,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.5.attention.self.key.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 9020160,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.5.attention.self.query.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 9167616,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.5.attention.self.query.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 9168000,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.5.attention.self.value.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 9315456,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.5.attention.self.value.weight",
+   "shape": [
+    384,
+    384
+   ],
+   "chunk": 1,
+   "offset": 9315840,
+   "length": 147456
+  },
+  {
+   "name": "encoder.layer.5.intermediate.dense.bias",
+   "shape": [
+    1536
+   ],
+   "chunk": 1,
+   "offset": 9463296,
+   "length": 1536
+  },
+  {
+   "name": "encoder.layer.5.intermediate.dense.weight",
+   "shape": [
+    1536,
+    384
+   ],
+   "chunk": 1,
+   "offset": 9464832,
+   "length": 589824
+  },
+  {
+   "name": "encoder.layer.5.output.LayerNorm.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 10054656,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.5.output.LayerNorm.weight",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 10055040,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.5.output.dense.bias",
+   "shape": [
+    384
+   ],
+   "chunk": 1,
+   "offset": 10055424,
+   "length": 384
+  },
+  {
+   "name": "encoder.layer.5.output.dense.weight",
+   "shape": [
+    384,
+    1536
+   ],
+   "chunk": 1,
+   "offset": 10055808,
+   "length": 589824
+  }
+ ]
+}

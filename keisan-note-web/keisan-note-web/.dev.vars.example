@@ -1,0 +1,6 @@
+# このファイルを「.dev.vars」という名前でコピーして値を書く（手元で npm run dev するときに使う）
+# 公開用のキーは wrangler pages secret put で登録する。.dev.vars は公開しないこと
+GEMINI_API_KEY=
+APP_PASSCODE=
+# 手書きの読み取りが弱いと感じたら gemini-3.8-flash に変える
+GEMINI_MODEL=gemini-3.5-flash-lite
